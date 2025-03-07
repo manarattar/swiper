@@ -3,7 +3,7 @@ import SwipeCard from "./components/SwipeCard";
 import Recommendation from "./components/Recommendation";
 import axios from "axios";
 
-const API_BASE_URL = "https://swipeeat-backend.onrender.com";
+const API_BASE_URL = "https://swiper-w69e.onrender.com";
 const userId = "user_123"; // Placeholder, replace with actual user ID logic
 
 export default function App() {
