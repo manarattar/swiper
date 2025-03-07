@@ -14,7 +14,7 @@ meals = [
         "category": "German",
         "meatKind": "Pork",
         "taste": "Savory",
-        "spicy": false,
+        "spicy": False,
         "emotion": "Exciting"
     },
     {
@@ -24,7 +24,7 @@ meals = [
         "category": "Italian",
         "meatKind": "Vegetarian",
         "taste": "Savory",
-        "spicy": false,
+        "spicy": False,
         "emotion": "Comforting"
     },
     {
@@ -34,7 +34,7 @@ meals = [
         "category": "Indian",
         "meatKind": "Vegetarian",
         "taste": "Savory",
-        "spicy": true,
+        "spicy": True,
         "emotion": "Exciting"
     },
     {
@@ -44,7 +44,7 @@ meals = [
         "category": "Vietnamese",
         "meatKind": "Chicken",
         "taste": "Savory",
-        "spicy": false,
+        "spicy": False,
         "emotion": "Refreshing"
     },
     {
@@ -54,7 +54,7 @@ meals = [
         "category": "Italian",
         "meatKind": "Pork",
         "taste": "Savory",
-        "spicy": false,
+        "spicy": False,
         "emotion": "Comforting"
     },
     {
@@ -64,7 +64,7 @@ meals = [
         "category": "Greek",
         "meatKind": "Lamb",
         "taste": "Savory",
-        "spicy": false,
+        "spicy": False,
         "emotion": "Exciting"
     },
     {
@@ -74,7 +74,7 @@ meals = [
         "category": "North African",
         "meatKind": "Varies",
         "taste": "Savory",
-        "spicy": false,
+        "spicy": False,
         "emotion": "Nostalgic"
     },
     {
@@ -84,7 +84,7 @@ meals = [
         "category": "Japanese",
         "meatKind": "Shrimp",
         "taste": "Savory",
-        "spicy": false,
+        "spicy": False,
         "emotion": "Luxurious"
     },
     {
@@ -94,7 +94,7 @@ meals = [
         "category": "Middle Eastern",
         "meatKind": "Vegetarian",
         "taste": "Savory",
-        "spicy": false,
+        "spicy": False,
         "emotion": "Nostalgic"
     },
     {
@@ -104,7 +104,7 @@ meals = [
         "category": "American",
         "meatKind": "Seafood",
         "taste": "Savory",
-        "spicy": false,
+        "spicy": False,
         "emotion": "Luxurious"
     },
     {
@@ -114,7 +114,7 @@ meals = [
         "category": "Turkish",
         "meatKind": "Vegetarian",
         "taste": "Savory",
-        "spicy": false,
+        "spicy": False,
         "emotion": "Nostalgic"
     },
     {
@@ -124,7 +124,7 @@ meals = [
         "category": "Japanese",
         "meatKind": "Pork",
         "taste": "Savory",
-        "spicy": false,
+        "spicy": False,
         "emotion": "Comforting"
     },
     {
@@ -134,7 +134,7 @@ meals = [
         "category": "Italian",
         "meatKind": "Vegetarian",
         "taste": "Savory",
-        "spicy": false,
+        "spicy": False,
         "emotion": "Nostalgic"
     },
     {
@@ -144,7 +144,7 @@ meals = [
         "category": "British",
         "meatKind": "Vegetarian",
         "taste": "Sweet",
-        "spicy": false,
+        "spicy": False,
         "emotion": "Refreshing"
     },
     {
@@ -154,7 +154,7 @@ meals = [
         "category": "Indian",
         "meatKind": "Vegetarian",
         "taste": "Savory",
-        "spicy": true,
+        "spicy": True,
         "emotion": "Exciting"
     },
     {
@@ -164,7 +164,7 @@ meals = [
         "category": "Hawaiian",
         "meatKind": "Fish",
         "taste": "Fresh",
-        "spicy": false,
+        "spicy": False,
         "emotion": "Refreshing"
     },
     {
@@ -174,7 +174,7 @@ meals = [
         "category": "French",
         "meatKind": "Vegetarian",
         "taste": "Varies",
-        "spicy": false,
+        "spicy": False,
         "emotion": "Comforting"
     },
     {
@@ -184,7 +184,7 @@ meals = [
         "category": "Mediterranean",
         "meatKind": "Vegetarian",
         "taste": "Savory",
-        "spicy": false,
+        "spicy": False,
         "emotion": "Refreshing"
     },
     {
@@ -194,7 +194,7 @@ meals = [
         "category": "American",
         "meatKind": "Beef",
         "taste": "Savory",
-        "spicy": false,
+        "spicy": False,
         "emotion": "Nostalgic"
     },
     {
@@ -204,7 +204,7 @@ meals = [
         "category": "French",
         "meatKind": "Seafood",
         "taste": "Savory",
-        "spicy": false,
+        "spicy": False,
         "emotion": "Luxurious"
     }
 ]
