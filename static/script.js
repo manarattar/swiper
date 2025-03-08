@@ -12,6 +12,9 @@ const likeButton = document.getElementById("like-button");
 const dislikeButton = document.getElementById("dislike-button");
 const goBackButton = document.getElementById("go-back-button");
 
+const mealEmotion = document.getElementById("meal-emotion");
+
+
 // Called when the swiping page (index.html) loads
 window.onload = () => {
   console.log("Swiping page loaded. Requesting current meal...");
@@ -53,6 +56,16 @@ function displayMeal(meal) {
   mealImg.src = meal.img;
   mealName.textContent = meal.name;
   mealDescription.textContent = meal.description;
+
+  // Display the emotion and emoji (if present)
+  if (meal.emotion && meal.emoji) {
+    mealEmotion.textContent = `Emotion: ${meal.emotion} ${meal.emoji}`;
+  } else if (meal.emotion) {
+    mealEmotion.textContent = `Emotion: ${meal.emotion}`;
+  } else {
+    // If there's no emotion in the data, clear or hide this field
+    mealEmotion.textContent = "";
+  }
 
   // Ensure the container is visible (remove 'hidden' if you're using that class)
   mainContainer.classList.remove("hidden");

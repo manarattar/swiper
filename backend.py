@@ -6,7 +6,8 @@ userPreferences = {
     "origin": {},
     "meatKind": {},
     "taste": {},
-    "spicy": {}
+    "spicy": {},
+    "emotion": {}   
 }
 currentMealIndex = 0
 
@@ -38,6 +39,9 @@ def updatePreferences(meal, liked):
     taste = meal.get("taste", "None")
     userPreferences["taste"][taste] = userPreferences["taste"].get(taste, 0) + (weight * 2)
 
+    em = meal.get("emotion", "None")
+    userPreferences["emotion"][em] = userPreferences["emotion"].get(em, 0) + (weight * 2)
+
 def revertPreferences(meal, liked):
     """
     If the user is "going back," undo the last preference change.
@@ -64,7 +68,9 @@ def recommendMeals():
         mk = m.get("meatKind", "None")
         spicy_key = "Spicy" if m.get("spicy") else "Not Spicy"
         taste = m.get("taste", "None")
+        em = m.get("emotion", "None")
 
+        score += userPreferences["emotion"].get(em, 0) * 2  # same multiplier as update
         score += userPreferences["origin"].get(cat, 0) * 2
         score += userPreferences["meatKind"].get(mk, 0) * 3
         score += userPreferences["spicy"].get(spicy_key, 0)

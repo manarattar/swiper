@@ -70,6 +70,12 @@ header {
     margin-top: 20px;
 }
 
+.meal-emotion {
+    font-style: italic; /* or bold, or a different color, etc. */
+    margin-top: 5px;
+  }
+  
+
 .buttons {
     display: flex;
     justify-content: space-around;
