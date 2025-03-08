@@ -58,14 +58,9 @@ function displayMeal(meal) {
   mealDescription.textContent = meal.description;
 
   // Display the emotion and emoji (if present)
-  if (meal.emotion && meal.emoji) {
-    mealEmotion.textContent = `Emotion: ${meal.emotion} ${meal.emoji}`;
-  } else if (meal.emotion) {
-    mealEmotion.textContent = `Emotion: ${meal.emotion}`;
-  } else {
-    // If there's no emotion in the data, clear or hide this field
-    mealEmotion.textContent = "";
-  }
+
+  mealEmotion.textContent = `Emotion: ${meal.emotion} ${meal.emoji}`;
+
 
   // Ensure the container is visible (remove 'hidden' if you're using that class)
   mainContainer.classList.remove("hidden");

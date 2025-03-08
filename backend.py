@@ -60,6 +60,9 @@ def revertPreferences(meal, liked):
     taste = meal.get("taste", "None")
     userPreferences["taste"][taste] = userPreferences["taste"].get(taste, 0) + (weight * 2)
 
+    em = meal.get("emotion", "None")
+    userPreferences["emotion"][em] = userPreferences["emotion"].get(em, 0) + (weight * 2)
+
 def recommendMeals():
     """Sort the meals based on userPreferences, once user has viewed them all."""
     def meal_score(m):
@@ -133,7 +136,9 @@ def resetState():
         "origin": {},
         "meatKind": {},
         "taste": {},
-        "spicy": {}
+        "spicy": {},
+        "emotion": {}   
+        
     }
 
     # IMPORTANT: Clear the swipe history, so no 'undo' is possible after a full reset
