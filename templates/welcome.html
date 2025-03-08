@@ -3,29 +3,219 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width,initial-scale=1.0">
-  <title>Welcome to Food Swipe!</title>
-  <!-- Main stylesheet reference -->
-  <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
-  <!-- Optionally load a Google Font for more style -->
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link
-    href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&display=swap"
-    rel="stylesheet"
-  >
-</head>
-<body class="welcome-body">
 
-  <!-- Main Welcome Container -->
-  <div class="welcome-container">
-    <h1 class="app-title">Food Swipe Selection</h1>
-    <p class="welcome-message">
-      Swipe right if you like a meal, and swipe left if you don't.
-      After swiping through all our meals, we'll show you a perfectly matched Meal of the Day.
-    </p>
-    
-    <!-- Start / "Got it!" Button -->
-    <a href="{{ url_for('food_swipe') }}" class="start-button">Got it!</a>
+  <title>Welcome to SwipeEat</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
+
+  <!-- Inline tutorial styling for simplicity -->
+  <style>
+    body {
+      margin: 0;
+      font-family: Arial, sans-serif;
+      background-color: #f0f0f0;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+    }
+    .tutorial-container {
+      background: #fff;
+      padding: 20px;
+      width: 80%;
+      max-width: 500px;
+      border-radius: 8px;
+      box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+      text-align: center;
+    }
+    .title {
+      margin-top: 0;
+      font-size: 1.8rem;
+    }
+    .sample-card {
+      position: relative;
+      margin: 20px auto;
+      width: 80%;
+      padding: 15px;
+      border: 2px dashed #ccc;
+      border-radius: 6px;
+      transition: transform 0.5s ease, opacity 0.5s ease;
+    }
+    .sample-card img {
+      display: block;
+      margin: 0 auto 10px;
+      width: 100%;
+      height: auto;
+      object-fit: cover;
+      border-radius: 8px;
+    }
+    .hidden {
+      display: none !important;
+    }
+    .swipe-left {
+      transform: translateX(-100%);
+      opacity: 0;
+    }
+    .swipe-right {
+      transform: translateX(100%);
+      opacity: 0;
+    }
+    /* Button styles */
+    .button {
+      display: inline-block;
+      padding: 10px 18px;
+      margin: 6px;
+      color: #fff;
+      background-color: #007bff;
+      text-decoration: none;
+      border-radius: 4px;
+      cursor: pointer;
+      border: none;
+    }
+    .button:hover {
+      background-color: #0056b3;
+    }
+    /* Specific styling for the go-back button */
+    .go-back {
+      background-color: #6c757d; /* Gray for undo */
+    }
+    .go-back:hover {
+      background-color: #5a6268;
+    }
+    i.fas.fa-undo {
+      font-size: 1.2rem;
+    }
+    .step-message {
+      margin-top: 10px;
+      min-height: 40px;
+      color: #333;
+    }
+  </style>
+</head>
+<body>
+
+<div class="tutorial-container">
+  <h1 class="title">Welcome to SwipeEat</h1>
+  <p>Your assistant to choose the best meal that fits your preference.</p>
+  <h3>How does it work?</h3>
+
+  <!-- Sample meal card for tutorial -->
+  <div id="sample-card" class="sample-card">
+    <img src="{{ url_for('static', filename='meal_images/sample_meal.png') }}"
+         alt="Sample Meal" />
+    <h4 id="meal-title">Sample Meal</h4>
+    <p id="meal-description">Try swiping this card!</p>
   </div>
+
+  <!-- Instruction message -->
+  <div class="step-message" id="step-message">
+    Step 1: Swipe right (→) if you like a meal.
+  </div>
+
+  <!-- Undo/Reload button with undo icon (hidden initially) -->
+  <div id="go-back-button" class="button go-back hidden">
+    <i class="fas fa-undo"></i>
+  </div>
+  
+  <!-- Final Start Swiping button (hidden initially) -->
+  <a href="{{ url_for('food_swipe') }}"
+     id="start-button"
+     class="button hidden">
+    Start Swiping
+  </a>
+</div>
+
+<script>
+  /**********************************************
+   * TUTORIAL STEPS:
+   * step = 1 -> User must swipe right (like)
+   * step = 2 -> User must swipe left (dislike)
+   * step = 3 -> User can click the "go back" icon to undo
+   * step = 4 -> Show "Start Swiping" button
+   **********************************************/
+  let tutorialStep = 1;
+
+  const stepMessage = document.getElementById("step-message");
+  const sampleCard = document.getElementById("sample-card");
+  const goBackButton = document.getElementById("go-back-button");
+  const startButton = document.getElementById("start-button");
+
+  // For swipe gestures
+  let touchstartX = 0;
+  let touchendX = 0;
+
+  function handleSwipe(direction) {
+    console.log(`Tutorial swipe: ${direction}, step = ${tutorialStep}`);
+
+    // Animate the card with a swipe effect
+    sampleCard.classList.add(direction === "right" ? "swipe-right" : "swipe-left");
+
+    setTimeout(() => {
+      // Reset card animation classes
+      sampleCard.classList.remove("swipe-right", "swipe-left");
+
+      // Step logic
+      if (tutorialStep === 1 && direction === "right") {
+        // Correct swipe for step 1
+        tutorialStep = 2;
+        stepMessage.textContent = "Step 2: Swipe left (←) if you do not like a meal.";
+      } else if (tutorialStep === 1 && direction === "left") {
+        // Wrong action for step 1
+        stepMessage.textContent = "Try swiping right! (→)";
+      } else if (tutorialStep === 2 && direction === "left") {
+        // Correct swipe for step 2
+        tutorialStep = 3;
+        stepMessage.textContent = "Step 3: Now click the undo button (↶) to go back to the previous meal.";
+        // Reveal the go-back button
+        goBackButton.classList.remove("hidden");
+      } else if (tutorialStep === 2 && direction === "right") {
+        // Wrong action for step 2
+        stepMessage.textContent = "Try swiping left! (←)";
+      } else {
+        stepMessage.textContent = "Follow the instructions!";
+      }
+    }, 500);
+  }
+
+  // Go-back (undo) button logic
+  goBackButton.addEventListener("click", () => {
+    if (tutorialStep === 3) {
+      stepMessage.textContent = "Reloaded! Now you are ready to start swiping for real.";
+      goBackButton.classList.add("hidden");
+      tutorialStep = 4; // Final step reached
+
+      // Reveal the Start Swiping button
+      startButton.classList.remove("hidden");
+    }
+  });
+
+  /**********************************************
+   * KEYBOARD EVENT LISTENER FOR SWIPE
+   **********************************************/
+  document.addEventListener("keydown", (e) => {
+    if (e.key === "ArrowRight") {
+      handleSwipe("right");
+    } else if (e.key === "ArrowLeft") {
+      handleSwipe("left");
+    }
+  });
+
+  /**********************************************
+   * TOUCH (MOBILE SWIPE) EVENT LISTENERS
+   **********************************************/
+  document.addEventListener("touchstart", (e) => {
+    touchstartX = e.changedTouches[0].screenX;
+  });
+  document.addEventListener("touchend", (e) => {
+    touchendX = e.changedTouches[0].screenX;
+    const diff = touchendX - touchstartX;
+    if (diff < -50) {
+      handleSwipe("left");
+    } else if (diff > 50) {
+      handleSwipe("right");
+    }
+  });
+</script>
 
 </body>
 </html>
