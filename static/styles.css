@@ -159,7 +159,7 @@ body, h1, h2, p, a, button {
   /* For the welcome page specifically */
   .welcome-body {
     /* Food-themed background image (public domain or your own) */
-    background: url("{{ url_for('static', filename='images/food_background.jpg') }}") no-repeat center center;
+    background: url('meal_images/Bulgur_Pilaf.png') no-repeat center center;
     background-size: cover;
     /* Center contents */
     display: flex;
