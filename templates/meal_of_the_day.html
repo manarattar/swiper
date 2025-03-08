@@ -1,0 +1,23 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Meal of the Day</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
+</head>
+<body>
+
+    <div class="meal-of-the-day">
+        <h1>Meal of the Day</h1>
+        <img src="{{ meal['img'] }}" alt="Meal of the Day">
+        <h2>{{ meal['name'] }}</h2>
+        <p>{{ meal['description'] }}</p>
+        <p><strong>Category:</strong> {{ meal['category'] }}</p>
+        <p><strong>Meat Type:</strong> {{ meal['meatKind'] }}</p>
+        <p><strong>Taste:</strong> {{ meal['taste'] }}</p>
+        <p><strong>Spicy:</strong> {{ "Yes" if meal['spicy'] else "No" }}</p>
+    </div>
+
+</body>
+</html>

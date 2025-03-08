@@ -1,12 +1,4 @@
-from fastapi import FastAPI, HTTPException, Depends
-from pydantic import BaseModel
-from collections import Counter
-import random
-
-app = FastAPI()
-
-# Sample meal dataset
-meals = [
+[
     {
         "name": "Currywurst",
         "img": "static/meal_images/Currywurst.png",
@@ -14,8 +6,7 @@ meals = [
         "category": "German",
         "meatKind": "Pork",
         "taste": "Savory",
-        "spicy": False,
-        "emotion": "Exciting"
+        "spicy": false
     },
     {
         "name": "Fettuccine Alfredo",
@@ -24,8 +15,7 @@ meals = [
         "category": "Italian",
         "meatKind": "Vegetarian",
         "taste": "Savory",
-        "spicy": False,
-        "emotion": "Comforting"
+        "spicy": false
     },
     {
         "name": "Samosas",
@@ -34,8 +24,7 @@ meals = [
         "category": "Indian",
         "meatKind": "Vegetarian",
         "taste": "Savory",
-        "spicy": True,
-        "emotion": "Exciting"
+        "spicy": true
     },
     {
         "name": "Pho Ga",
@@ -44,8 +33,7 @@ meals = [
         "category": "Vietnamese",
         "meatKind": "Chicken",
         "taste": "Savory",
-        "spicy": False,
-        "emotion": "Refreshing"
+        "spicy": false
     },
     {
         "name": "Carbonara",
@@ -54,8 +42,7 @@ meals = [
         "category": "Italian",
         "meatKind": "Pork",
         "taste": "Savory",
-        "spicy": False,
-        "emotion": "Comforting"
+        "spicy": false
     },
     {
         "name": "Gyros",
@@ -64,8 +51,7 @@ meals = [
         "category": "Greek",
         "meatKind": "Lamb",
         "taste": "Savory",
-        "spicy": False,
-        "emotion": "Exciting"
+        "spicy": false
     },
     {
         "name": "Couscous",
@@ -74,8 +60,7 @@ meals = [
         "category": "North African",
         "meatKind": "Varies",
         "taste": "Savory",
-        "spicy": False,
-        "emotion": "Nostalgic"
+        "spicy": false
     },
     {
         "name": "Shrimp Tempura",
@@ -84,8 +69,7 @@ meals = [
         "category": "Japanese",
         "meatKind": "Shrimp",
         "taste": "Savory",
-        "spicy": False,
-        "emotion": "Luxurious"
+        "spicy": false
     },
     {
         "name": "Dolma",
@@ -94,8 +78,7 @@ meals = [
         "category": "Middle Eastern",
         "meatKind": "Vegetarian",
         "taste": "Savory",
-        "spicy": False,
-        "emotion": "Nostalgic"
+        "spicy": false
     },
     {
         "name": "Crab Cakes",
@@ -104,8 +87,7 @@ meals = [
         "category": "American",
         "meatKind": "Seafood",
         "taste": "Savory",
-        "spicy": False,
-        "emotion": "Luxurious"
+        "spicy": false
     },
     {
         "name": "Bulgur Pilaf",
@@ -114,8 +96,7 @@ meals = [
         "category": "Turkish",
         "meatKind": "Vegetarian",
         "taste": "Savory",
-        "spicy": False,
-        "emotion": "Nostalgic"
+        "spicy": false
     },
     {
         "name": "Tonkatsu",
@@ -124,8 +105,7 @@ meals = [
         "category": "Japanese",
         "meatKind": "Pork",
         "taste": "Savory",
-        "spicy": False,
-        "emotion": "Comforting"
+        "spicy": false
     },
     {
         "name": "Polenta",
@@ -134,8 +114,7 @@ meals = [
         "category": "Italian",
         "meatKind": "Vegetarian",
         "taste": "Savory",
-        "spicy": False,
-        "emotion": "Nostalgic"
+        "spicy": false
     },
     {
         "name": "Eton Mess",
@@ -144,8 +123,7 @@ meals = [
         "category": "British",
         "meatKind": "Vegetarian",
         "taste": "Sweet",
-        "spicy": False,
-        "emotion": "Refreshing"
+        "spicy": false
     },
     {
         "name": "Paneer Butter Masala",
@@ -154,8 +132,7 @@ meals = [
         "category": "Indian",
         "meatKind": "Vegetarian",
         "taste": "Savory",
-        "spicy": True,
-        "emotion": "Exciting"
+        "spicy": true
     },
     {
         "name": "Tuna Poke Bowl",
@@ -164,8 +141,7 @@ meals = [
         "category": "Hawaiian",
         "meatKind": "Fish",
         "taste": "Fresh",
-        "spicy": False,
-        "emotion": "Refreshing"
+        "spicy": false
     },
     {
         "name": "Crepes",
@@ -174,8 +150,7 @@ meals = [
         "category": "French",
         "meatKind": "Vegetarian",
         "taste": "Varies",
-        "spicy": False,
-        "emotion": "Comforting"
+        "spicy": false
     },
     {
         "name": "Zucchini Fritters",
@@ -184,8 +159,7 @@ meals = [
         "category": "Mediterranean",
         "meatKind": "Vegetarian",
         "taste": "Savory",
-        "spicy": False,
-        "emotion": "Refreshing"
+        "spicy": false
     },
     {
         "name": "Meatloaf",
@@ -194,8 +168,7 @@ meals = [
         "category": "American",
         "meatKind": "Beef",
         "taste": "Savory",
-        "spicy": False,
-        "emotion": "Nostalgic"
+        "spicy": false
     },
     {
         "name": "Lobster Bisque",
@@ -204,82 +177,6 @@ meals = [
         "category": "French",
         "meatKind": "Seafood",
         "taste": "Savory",
-        "spicy": False,
-        "emotion": "Luxurious"
+        "spicy": false
     }
 ]
-
-# Store user session data (in-memory for now, can use DB later)
-user_sessions = {}
-
-class SwipeData(BaseModel):
-    user_id: str
-    meal_name: str
-    liked: bool
-
-@app.post("/swipe")
-def swipe_meal(data: SwipeData):
-    """Store user swipe and update preferences."""
-    user_id = data.user_id
-    if user_id not in user_sessions:
-        user_sessions[user_id] = {"liked": [], "disliked": [], "preferences": {"category": Counter(), "meatKind": Counter(), "taste": Counter(), "emotion": Counter()}}
-    
-    session = user_sessions[user_id]
-    meal = next((m for m in meals if m["name"] == data.meal_name), None)
-    
-    if not meal:
-        raise HTTPException(status_code=404, detail="Meal not found")
-    
-    if data.liked:
-        session["liked"].append(meal)
-        session["preferences"]["category"][meal["category"]] += 1
-        session["preferences"]["meatKind"][meal["meatKind"]] += 1
-        session["preferences"]["taste"][meal["taste"]] += 1
-        session["preferences"]["emotion"][meal["emotion"]] += 1
-    else:
-        session["disliked"].append(meal)
-    
-    return {"message": "Swipe recorded"}
-
-@app.get("/recommend/{user_id}")
-def recommend_meal(user_id: str):
-    """Recommend a meal after 20 swipes."""
-    if user_id not in user_sessions or len(user_sessions[user_id]["liked"]) + len(user_sessions[user_id]["disliked"]) < 20:
-        raise HTTPException(status_code=400, detail="Not enough swipes yet")
-    
-    session = user_sessions[user_id]
-    scores = []
-    
-    for meal in meals:
-        if meal in session["liked"] or meal in session["disliked"]:
-            continue
-        
-        score = (
-            session["preferences"]["category"][meal["category"]] * 3 +
-            session["preferences"]["meatKind"][meal["meatKind"]] * 2 +
-            session["preferences"]["taste"][meal["taste"]] * 4 +
-            session["preferences"]["emotion"][meal["emotion"]] * 5
-        )
-        scores.append((meal, score))
-    
-    scores.sort(key=lambda x: x[1], reverse=True)
-    best_meal = scores[0][0] if scores else None
-    
-    if best_meal:
-        return {"recommended_meal": best_meal}
-    else:
-        raise HTTPException(status_code=404, detail="No suitable recommendation found")
-
-@app.get("/next_meal/{user_id}")
-def get_next_meal(user_id: str):
-    """Fetch a random meal for the user to swipe on."""
-    if user_id not in user_sessions:
-        user_sessions[user_id] = {"liked": [], "disliked": [], "preferences": {"category": Counter(), "meatKind": Counter(), "taste": Counter(), "emotion": Counter()}}
-    
-    viewed_meals = set(m["name"] for m in user_sessions[user_id]["liked"] + user_sessions[user_id]["disliked"])
-    remaining_meals = [m for m in meals if m["name"] not in viewed_meals]
-    
-    if not remaining_meals:
-        raise HTTPException(status_code=404, detail="No more meals to swipe")
-    
-    return random.choice(remaining_meals)

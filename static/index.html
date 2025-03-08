@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+ <html lang="en">
+ <head>
+     <meta charset="UTF-8">
+     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+     <title>Food Swipe Selection</title>
+     <link rel="stylesheet" href="static/styles.css">
+     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css" rel="stylesheet">
+ 
+ </head>
+ <body>
+ 
+     <div id="popup" class="popup">
+         <div class="popup-content">
+             <h2>Welcome to Food Swipe Selection!</h2>
+             <p>Swipe right if you like a meal, and swipe left if you don't. After 20 swipes, we'll show you the perfect match meal of the day based on your preferences.</p>
+             <button id="close-popup">Got it!</button>
+         </div>
+     </div>
+     <div id="main-container" class="container hidden">
+         <div id="card" class="card">
+             <header>
+                 <h1 class="title">SwipEat</h1>
+             </header>
+             <img id="meal-img" src="" alt="Meal Image">
+             <h2 id="meal-name">Meal Name</h2>
+             <p id="meal-description">Meal Description</p>
+             <div class="actions">
+                 <div class="buttons">
+                     <div id="dislike-button" class="button dislike">
+                         <i class="fas fa-thumbs-down"></i>
+                     </div>
+                     <div id="like-button" class="button like">
+                         <i class="fas fa-thumbs-up"></i>
+                     </div>
+                 </div>
+             </div>
+         </div>
+     </div>
+     <div id="meal-of-the-day" class="meal-of-the-day hidden">
+         <h2>Meal of the Day</h2>
+         <img id="meal-of-the-day-img" src="" alt="Meal of the Day Image">
+         <h3 id="meal-of-the-day-name">Meal Name</h3>
+         <p id="meal-of-the-day-description">Meal Description</p>
+     </div>
+     <script type="module" src="script.js"></script>
+ </body>
+ </html>
