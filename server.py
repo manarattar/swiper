@@ -6,6 +6,7 @@ from backend import (
     updatePreferences,
     resetState,
     meals,
+    goBackOneMeal,
     currentMealIndex
 )
 
@@ -81,7 +82,7 @@ def handle_swipe():
     updatePreferences(currentMeal, liked)
 
     # Get the next meal (or best match if we are at the end)
-    newMeal, isMealOfTheDay = nextMeal()
+    newMeal, isMealOfTheDay = nextMeal(liked)
     return jsonify({"meal": newMeal, "isMealOfTheDay": isMealOfTheDay})
 
 # -------------------------------------------
@@ -94,6 +95,16 @@ def restart():
     """
     resetState()
     return redirect(url_for("welcome"))
+
+# NEW: handle "go back" request
+@app.route("/go_back", methods=["POST"])
+def go_back():
+    """
+    Reverts the last swipe and returns the previous meal.
+    """
+    meal, isMealOfTheDay = goBackOneMeal()
+    # If meal is None, that means no history to revert
+    return jsonify({"meal": meal, "isMealOfTheDay": isMealOfTheDay})
 
 # -------------------------------------------
 # MAIN

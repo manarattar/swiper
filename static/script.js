@@ -10,6 +10,7 @@ const mealDescription = document.getElementById("meal-description");
 
 const likeButton = document.getElementById("like-button");
 const dislikeButton = document.getElementById("dislike-button");
+const goBackButton = document.getElementById("go-back-button");
 
 // Called when the swiping page (index.html) loads
 window.onload = () => {
@@ -130,3 +131,25 @@ function handleGesture() {
 // Buttons
 likeButton.addEventListener("click", () => handleSwipe("right"));
 dislikeButton.addEventListener("click", () => handleSwipe("left"));
+
+goBackButton.addEventListener("click", handleGoBack);
+
+function handleGoBack() {
+  // POST to /go_back
+  fetch("/go_back", { method: "POST" })
+    .then((res) => res.json())
+    .then((data) => {
+      const { meal, isMealOfTheDay } = data;
+      if (!meal) {
+        console.log("No previous meal to revert to.");
+        return;
+      }
+      if (isMealOfTheDay) {
+        // Theoretically shouldn't happen if we're going back, but handle it anyway
+        window.location.href = "/meal-of-the-day";
+      } else {
+        displayMeal(meal);
+      }
+    })
+    .catch((err) => console.error("Error going back:", err));
+}
