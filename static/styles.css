@@ -1,3 +1,6 @@
+/* file: static/styles.css */
+
+/* Base styling */
 body {
     display: flex;
     justify-content: center;
@@ -10,8 +13,8 @@ body {
 
 header {
     text-align: center;
-    margin-bottom: 20px; /* Adjust spacing between the title and the card */
-    width: 100%; /* Ensure the title spans across the page */
+    margin-bottom: 20px;
+    width: 100%;
 }
 
 .title {
@@ -19,24 +22,27 @@ header {
     font-weight: bold;
     color: #CC9900;
     text-shadow: 2px 2px 5px rgba(0, 0, 0, 0.1);
-    margin: 0; /* Avoid extra margins */
-}
-#main-container {
-    display: none;
+    margin: 0;
 }
 
+/* Reusable hidden class for toggling visibility in JS */
+.hidden {
+    display: none !important;
+}
+
+/* Main container for the swiping page */
 .container {
     width: 300px;
     position: relative;
 }
 
+/* Card styling */
 .card {
     background: white;
     padding: 20px;
     border-radius: 10px;
     box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
     text-align: center;
-    transition: transform 0.5s ease;
     transition: transform 0.5s ease, opacity 0.5s ease;
 }
 
@@ -59,64 +65,14 @@ header {
     margin: 10px 0;
 }
 
-.meal-of-the-day {
+/* Like/Dislike button area */
+.actions {
     margin-top: 20px;
-    padding: 20px;
-    background: #fff8e1;
-    border-radius: 10px;
-    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
-    text-align: center;
-    display: none; /* Initially hide the meal of the day */
 }
 
-.meal-of-the-day img {
-    width: 100%;
-    border-radius: 10px;
-}
-
-.popup {
-    position: fixed;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    background: rgba(0, 0, 0, 0.7);
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    z-index: 1000;
-}
-
-.popup.hidden {
-    display: none;
-}
-
-.popup-content {
-    background: white;
-    padding: 20px;
-    border-radius: 10px;
-    text-align: center;
-    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
-}
-
-.popup-content button {
-    margin-top: 20px;
-    padding: 10px 20px;
-    background-color: #007bff;
-    color: white;
-    border: none;
-    border-radius: 5px;
-    cursor: pointer;
-}
-
-.popup-content button:hover {
-    background-color: #0056b3;
-}
-/* Like and Dislike Buttons */
 .buttons {
     display: flex;
     justify-content: space-around;
-    margin-top: 20px;
 }
 
 .button {
@@ -162,3 +118,97 @@ header {
 .button.dislike i {
     color: #dc3545;
 }
+
+/* Meal of the Day page container */
+.meal-of-the-day-container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    width: 300px;
+    background: #fff8e1;
+    padding: 20px;
+    border-radius: 10px;
+    box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+}
+
+.meal-of-the-day-container img {
+    width: 100%;
+    border-radius: 10px;
+    margin-bottom: 10px;
+}
+
+.meal-of-the-day-container button {
+    margin-top: 20px;
+    padding: 10px 20px;
+    background-color: #007bff;
+    color: #ffffff;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+}
+
+.meal-of-the-day-container button:hover {
+    background-color: #0056b3;
+}
+
+/* Apply the imported Google Font across the entire body */
+body, h1, h2, p, a, button {
+    font-family: 'Poppins', Arial, sans-serif;
+  }
+  
+  /* For the welcome page specifically */
+  .welcome-body {
+    /* Food-themed background image (public domain or your own) */
+    background: url("{{ url_for('static', filename='images/food_background.jpg') }}") no-repeat center center;
+    background-size: cover;
+    /* Center contents */
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100vh;
+    margin: 0;
+  }
+  
+  /* Container that holds the welcome text and button */
+  .welcome-container {
+    background-color: rgba(255, 255, 255, 0.85); /* Slightly transparent white overlay */
+    padding: 40px;
+    border-radius: 8px;
+    max-width: 500px;
+    text-align: center;
+    /* Optional subtle box shadow */
+    box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+  }
+  
+  /* Main title */
+  .app-title {
+    font-size: 2.5rem;
+    font-weight: 600;
+    margin: 0 0 20px;
+    color: #333;
+  }
+  
+  /* Welcome paragraph */
+  .welcome-message {
+    font-size: 1.1rem;
+    color: #555;
+    margin-bottom: 30px;
+    line-height: 1.4;
+  }
+  
+  /* "Got it!" button style */
+  .start-button {
+    display: inline-block;
+    padding: 14px 28px;
+    background-color: #28a745; /* greenish tone */
+    color: #fff;
+    text-decoration: none;
+    font-weight: 600;
+    border-radius: 6px;
+    transition: background-color 0.3s ease, transform 0.2s ease;
+  }
+  
+  .start-button:hover {
+    background-color: #218838;
+    transform: scale(1.05);
+  }

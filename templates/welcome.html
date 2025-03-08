@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Welcome to Food Swipe!</title>
+  <!-- Main stylesheet reference -->
+  <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
+  <!-- Optionally load a Google Font for more style -->
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link
+    href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&display=swap"
+    rel="stylesheet"
+  >
+</head>
+<body class="welcome-body">
+
+  <!-- Main Welcome Container -->
+  <div class="welcome-container">
+    <h1 class="app-title">Food Swipe Selection</h1>
+    <p class="welcome-message">
+      Swipe right if you like a meal, and swipe left if you don't.
+      After swiping through all our meals, we'll show you a perfectly matched Meal of the Day.
+    </p>
+    
+    <!-- Start / "Got it!" Button -->
+    <a href="{{ url_for('food_swipe') }}" class="start-button">Got it!</a>
+  </div>
+
+</body>
+</html>

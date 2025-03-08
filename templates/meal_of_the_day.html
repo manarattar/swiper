@@ -1,23 +1,26 @@
+<!-- file: templates/meal_of_the_day.html -->
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Meal of the Day</title>
-    <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
+  <meta charset="UTF-8">
+  <title>Meal of the Day</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
 </head>
 <body>
 
-    <div class="meal-of-the-day">
-        <h1>Meal of the Day</h1>
-        <img src="{{ meal['img'] }}" alt="Meal of the Day">
-        <h2>{{ meal['name'] }}</h2>
-        <p>{{ meal['description'] }}</p>
-        <p><strong>Category:</strong> {{ meal['category'] }}</p>
-        <p><strong>Meat Type:</strong> {{ meal['meatKind'] }}</p>
-        <p><strong>Taste:</strong> {{ meal['taste'] }}</p>
-        <p><strong>Spicy:</strong> {{ "Yes" if meal['spicy'] else "No" }}</p>
-    </div>
+  <div class="meal-of-the-day-container">
+    <h2>Meal of the Day</h2>
+
+    <!-- The server injects the "meal" data in the template context -->
+    <img src="{{ meal.img }}" alt="Meal of the Day Image">
+    <h3>{{ meal.name }}</h3>
+    <p>{{ meal.description }}</p>
+
+    <!-- Restart button: POSTs to /restart, which resets your preferences/index -->
+    <form action="{{ url_for('restart') }}" method="POST">
+      <button type="submit">Restart</button>
+    </form>
+  </div>
 
 </body>
 </html>
