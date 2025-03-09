@@ -24,6 +24,14 @@
       scroll-snap-align: start;
     }
     
+    /* Container to centralize content and add responsive margins */
+    .container {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 0 15px;
+      box-sizing: border-box;
+    }
+    
     /* Navigation Menu */
     .navbar {
       position: fixed;
@@ -243,48 +251,56 @@
   
   <!-- Navigation Menu -->
   <nav class="navbar" role="navigation" aria-label="Main Navigation">
-    <ul>
-      <li><a href="#hero" aria-label="Navigate to Home section">Home</a></li>
-      <li><a href="#swipe" aria-label="Navigate to Tutorial section">Tutorial</a></li>
-      <li><a href="#about" aria-label="Navigate to About section">About</a></li>
-    </ul>
+    <div class="container">
+      <ul>
+        <li><a href="#hero" aria-label="Navigate to Home section">Home</a></li>
+        <li><a href="#swipe" aria-label="Navigate to Tutorial section">Tutorial</a></li>
+        <li><a href="#about" aria-label="Navigate to About section">About</a></li>
+      </ul>
+    </div>
   </nav>
   
   <!-- Block 1: Hero Section -->
   <section id="hero" class="section hero">
-    <h1>Welcome to SwipeEat</h1>
-    <button onclick="tryItOut()">Try it out</button>
+    <div class="container">
+      <h1>Welcome to SwipeEat</h1>
+      <button onclick="tryItOut()">Try it out</button>
+    </div>
   </section>
   
   <!-- Block 2: Swipe Images Section -->
   <section id="swipe" class="section swipe-section">
-    <div class="swipe-image">
-      <img src="static/meal_images/tutorial.png" alt="Tutorial Image 1" loading="lazy">
-    </div>
-    <div class="swipe-image">
-      <img src="static/meal_images/tutorial.png" alt="Tutorial Image 2" loading="lazy">
-    </div>
-    <div class="swipe-image">
-      <img src="static/meal_images/tutorial.png" alt="Tutorial Image 3" loading="lazy">
+    <div class="container">
+      <div class="swipe-image">
+        <img src="static/meal_images/tutorial.png" alt="Tutorial Image 1" loading="lazy">
+      </div>
+      <div class="swipe-image">
+        <img src="static/meal_images/tutorial.png" alt="Tutorial Image 2" loading="lazy">
+      </div>
+      <div class="swipe-image">
+        <img src="static/meal_images/tutorial.png" alt="Tutorial Image 3" loading="lazy">
+      </div>
     </div>
   </section>
   
   <!-- Block 3: About Us Section -->
   <section id="about" class="section about-section">
-    <h2>About SwipeEat</h2>
-    <div class="about-description">
-      <p>
-        At SwipeEat, our vision is to revolutionize the way people discover and enjoy culinary experiences. Our mission is to connect food enthusiasts with the best local eateries, fostering a community built on trust, quality, and innovation.
-      </p>
-    </div>
-    <div class="founders">
-      <div class="founder-card">
-        <img src="static/meal_images/raihan.jpeg" alt="Raihan Karim" loading="lazy">
-        <h3>Raihan Karim</h3>
+    <div class="container">
+      <h2>About SwipeEat</h2>
+      <div class="about-description">
+        <p>
+          At SwipeEat, our vision is to revolutionize the way people discover and enjoy culinary experiences. Our mission is to connect food enthusiasts with the best local eateries, fostering a community built on trust, quality, and innovation.
+        </p>
       </div>
-      <div class="founder-card">
-        <img src="static/meal_images/manar.jpeg" alt="Manar Attar" loading="lazy">
-        <h3>Manar Attar</h3>
+      <div class="founders">
+        <div class="founder-card">
+          <img src="static/meal_images/raihan.jpeg" alt="Raihan Karim" loading="lazy">
+          <h3>Raihan Karim</h3>
+        </div>
+        <div class="founder-card">
+          <img src="static/meal_images/manar.jpeg" alt="Manar Attar" loading="lazy">
+          <h3>Manar Attar</h3>
+        </div>
       </div>
     </div>
   </section>
