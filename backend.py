@@ -40,7 +40,7 @@ def updatePreferences(meal, liked):
     userPreferences["taste"][taste] = userPreferences["taste"].get(taste, 0) + (weight * 2)
 
     em = meal.get("emotion", "None")
-    userPreferences["emotion"][em] = userPreferences["emotion"].get(em, 0) + (weight * 2)
+    userPreferences["emotion"][em] = userPreferences["emotion"].get(em, 0) + (weight * 0.5)
 
 def revertPreferences(meal, liked):
     """
@@ -61,7 +61,7 @@ def revertPreferences(meal, liked):
     userPreferences["taste"][taste] = userPreferences["taste"].get(taste, 0) + (weight * 2)
 
     em = meal.get("emotion", "None")
-    userPreferences["emotion"][em] = userPreferences["emotion"].get(em, 0) + (weight * 2)
+    userPreferences["emotion"][em] = userPreferences["emotion"].get(em, 0) + (weight * 0.5)
 
 def recommendMeals():
     """Sort the meals based on userPreferences, once user has viewed them all."""
@@ -77,7 +77,7 @@ def recommendMeals():
         score += userPreferences["origin"].get(cat, 0) * 2
         score += userPreferences["meatKind"].get(mk, 0) * 3
         score += userPreferences["spicy"].get(spicy_key, 0)
-        score += userPreferences["taste"].get(taste, 0) * 2
+        score += userPreferences["taste"].get(taste, 0) * 0.5
         return score
 
     meals.sort(key=meal_score, reverse=True)

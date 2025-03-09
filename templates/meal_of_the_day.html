@@ -3,6 +3,7 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1.0">
   <title>Meal of the Day</title>
   <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
 </head>
@@ -13,8 +14,13 @@
 
     <!-- The server injects the "meal" data in the template context -->
     <img src="{{ meal.img }}" alt="Meal of the Day Image">
-    <h3>{{ meal.name }}</h3>
-    <p>{{ meal.description }}</p>
+    <h3>Name: {{ meal.name }}</h3>
+    <h3>Description: {{ meal.description }}</h3>
+    <h3>Cusine: {{ meal.category }}</h3>
+    <h3>MeatKind: {{ meal.meatKind }}</h3>
+    <h3>Taste: {{ meal.taste }}</h3>
+    <h3>Emotion: {{ meal.emotion }} {{ meal.emoji }}</h3>
+
 
     <!-- Restart button: POSTs to /restart, which resets your preferences/index -->
     <form action="{{ url_for('restart') }}" method="POST">
