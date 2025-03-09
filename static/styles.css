@@ -127,15 +127,16 @@ header {
 
 /* Meal of the Day page container */
 .meal-of-the-day-container {
+    border-width: 10px;
     display: flex;
     flex-direction: column;
-    align-items: center;
+    justify-content: center;  /* Vertically centers content */
+    align-items: center;      /* Horizontally centers content */
+    padding: 20px;            /* Optional: adds some spacing around the content */
+    background: #fff8e1;      /* Your desired background color or image */
+    box-sizing: border-box;   /* Ensures padding is in*/
     width: 80%; /* flexible for many screen sizes */
-    max-width: 600px;
-    background: #fff8e1;
-    padding: 20px;
-    border-radius: 10px;
-    box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+
 }
 
 .meal-of-the-day-container img {
