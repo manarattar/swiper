@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
   <title>SwipeEat Landing Page</title>
   <style>
     /* Global Styles & Scroll-Snap */
@@ -12,6 +12,8 @@
       scroll-behavior: smooth;
       scroll-snap-type: y mandatory;
       font-family: Arial, sans-serif;
+      overflow-x: hidden;
+      touch-action: manipulation;
     }
     body {
       margin: 0;
@@ -31,15 +33,11 @@
       background-color: rgba(255, 255, 255, 0.95);
       box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
       z-index: 1000;
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      padding: 10px 20px;
     }
     .navbar ul {
       list-style: none;
       margin: 0;
-      padding: 0;
+      padding: 10px 20px;
       display: flex;
       justify-content: center;
     }
@@ -54,41 +52,6 @@
     }
     .navbar ul li a:hover {
       color: #ff5722;
-    }
-    /* Hamburger Menu Icon for Mobile */
-    .hamburger {
-      display: none;
-      flex-direction: column;
-      cursor: pointer;
-    }
-    .hamburger span {
-      height: 3px;
-      width: 25px;
-      background: #333;
-      margin: 4px 0;
-      transition: 0.4s;
-    }
-    /* Mobile Navigation Menu (hidden by default) */
-    .mobile-menu {
-      display: none;
-      flex-direction: column;
-      position: absolute;
-      top: 60px;
-      right: 20px;
-      background: rgba(255, 255, 255, 0.95);
-      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-      border-radius: 5px;
-      padding: 10px;
-    }
-    .mobile-menu a {
-      padding: 10px;
-      text-decoration: none;
-      color: #333;
-      font-weight: bold;
-      border-bottom: 1px solid #eee;
-    }
-    .mobile-menu a:last-child {
-      border-bottom: none;
     }
     
     /* Block 1: Hero Section with Parallax & Animation */
@@ -232,15 +195,10 @@
       to { opacity: 1; transform: translateY(0); }
     }
     
-    /* Media Query for Mobile Devices */
+    /* Responsive Design for Tablets and Smaller Devices */
     @media (max-width: 768px) {
-      /* Adjust hero section for smaller screens */
       .hero h1 {
         font-size: 2.5rem;
-      }
-      .hero button {
-        padding: 10px 20px;
-        font-size: 1rem;
       }
       .founders {
         flex-direction: column;
@@ -249,45 +207,34 @@
       .founder-card {
         width: 80%;
       }
-      /* Disable scroll-snap for smoother mobile scrolling */
-      html {
-        scroll-snap-type: none;
+      .navbar ul {
+        justify-content: center;
       }
-      /* Simplify animations on mobile for performance */
-      * {
-        animation-duration: 0.5s !important;
-      }
-      /* Hide desktop navigation and show hamburger menu */
-      .navbar ul.desktop-menu {
-        display: none;
-      }
-      .hamburger {
-        display: flex;
-      }
-      /* Mobile menu styles */
-      .mobile-menu {
-        display: none;
-      }
-      .mobile-menu.active {
-        display: flex;
+      .swipe-section {
+        padding: 40px 0;
       }
     }
     
-    /* Additional Media Query for Very Small Screens */
+    /* Additional Adjustments for Mobile Phones */
     @media (max-width: 480px) {
       .hero h1 {
         font-size: 2rem;
       }
       .hero button {
-        font-size: 0.9rem;
+        font-size: 1rem;
+        padding: 10px 20px;
       }
-      .navbar {
+      .navbar ul {
         padding: 10px;
       }
-      .hamburger span {
-        height: 2px;
-        width: 20px;
-        margin: 3px 0;
+      .navbar ul li {
+        margin: 0 10px;
+      }
+      .swipe-image {
+        margin: 10px auto;
+      }
+      .about-section {
+        padding: 30px 10px;
       }
     }
   </style>
@@ -296,24 +243,11 @@
   
   <!-- Navigation Menu -->
   <nav class="navbar" role="navigation" aria-label="Main Navigation">
-    <div class="logo">
-      <a href="#hero" style="text-decoration: none; color: #333; font-weight: bold;">SwipeEat</a>
-    </div>
-    <div class="hamburger" id="hamburger" aria-label="Menu" onclick="toggleMobileMenu()">
-      <span></span>
-      <span></span>
-      <span></span>
-    </div>
-    <ul class="desktop-menu">
+    <ul>
       <li><a href="#hero" aria-label="Navigate to Home section">Home</a></li>
       <li><a href="#swipe" aria-label="Navigate to Tutorial section">Tutorial</a></li>
       <li><a href="#about" aria-label="Navigate to About section">About</a></li>
     </ul>
-    <div class="mobile-menu" id="mobileMenu">
-      <a href="#hero" onclick="toggleMobileMenu()">Home</a>
-      <a href="#swipe" onclick="toggleMobileMenu()">Tutorial</a>
-      <a href="#about" onclick="toggleMobileMenu()">About</a>
-    </div>
   </nav>
   
   <!-- Block 1: Hero Section -->
@@ -380,12 +314,6 @@
     
     function scrollToTop() {
       window.scrollTo({ top: 0, behavior: 'smooth' });
-    }
-    
-    // Toggle Mobile Menu Functionality
-    function toggleMobileMenu() {
-      const mobileMenu = document.getElementById('mobileMenu');
-      mobileMenu.classList.toggle('active');
     }
   </script>
   
