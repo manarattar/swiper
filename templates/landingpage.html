@@ -24,7 +24,7 @@
       scroll-snap-align: start;
     }
     
-    /* Container to centralize content and add responsive margins */
+    /* Container for Centralized, Responsive Content */
     .container {
       max-width: 1200px;
       margin: 0 auto;
@@ -62,28 +62,36 @@
       color: #ff5722;
     }
     
-    /* Block 1: Hero Section with Parallax & Animation */
+    /* Hero Section with Flexible Background Image */
     .hero {
-      background-image: url('static/meal_images/landing_bg.jpg');
-      background-size: cover;
-      background-position: center;
-      background-attachment: fixed;
-      height: 100vh;
-      display: flex;
-      flex-direction: column;
-      justify-content: center;
-      align-items: center;
-      color: white;
-      text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.7);
-      padding-top: 60px; /* To avoid overlap with the fixed navbar */
-      box-sizing: border-box;
+      position: relative;
     }
-    .hero h1 {
+    .hero-image-container {
+      position: relative;
+      width: 100%;
+    }
+    .hero-bg {
+      width: 100%;
+      height: auto;
+      display: block;
+    }
+    .hero-content {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      /* The initial transform centers the content */
+      transform: translate(-50%, -50%);
+      text-align: center;
+      color: white;
+      text-shadow: 2px 2px 4px rgba(0,0,0,0.7);
+      transition: transform 0.1s ease-out;
+    }
+    .hero-content h1 {
       font-size: 4rem;
       margin-bottom: 20px;
       animation: fadeIn 1s ease-out forwards;
     }
-    .hero button {
+    .hero-content button {
       padding: 15px 30px;
       font-size: 1.2rem;
       border: none;
@@ -96,7 +104,7 @@
       animation-delay: 0.3s;
       opacity: 0;
     }
-    .hero button:hover {
+    .hero-content button:hover {
       background-color: #e64a19;
     }
     
@@ -205,7 +213,7 @@
     
     /* Responsive Design for Tablets and Smaller Devices */
     @media (max-width: 768px) {
-      .hero h1 {
+      .hero-content h1 {
         font-size: 2.5rem;
       }
       .founders {
@@ -225,10 +233,10 @@
     
     /* Additional Adjustments for Mobile Phones */
     @media (max-width: 480px) {
-      .hero h1 {
+      .hero-content h1 {
         font-size: 2rem;
       }
-      .hero button {
+      .hero-content button {
         font-size: 1rem;
         padding: 10px 20px;
       }
@@ -260,11 +268,14 @@
     </div>
   </nav>
   
-  <!-- Block 1: Hero Section -->
+  <!-- Hero Section with Responsive Background Image and Moving Content -->
   <section id="hero" class="section hero">
-    <div class="container">
-      <h1>Welcome to SwipeEat</h1>
-      <button onclick="tryItOut()">Try it out</button>
+    <div class="hero-image-container">
+      <img src="static/meal_images/landing_bg.jpg" alt="Landing Background" class="hero-bg" loading="lazy">
+      <div class="hero-content container">
+        <h1>Welcome to SwipeEat</h1>
+        <button onclick="tryItOut()">Try it out</button>
+      </div>
     </div>
   </section>
   
@@ -326,6 +337,12 @@
           backToTopButton.style.display = 'none';
         }, 300);
       }
+      
+      // Update the hero content position based on scroll offset
+      const offset = window.pageYOffset;
+      // Adjust the factor (0.2) as needed to control the movement speed
+      document.querySelector('.hero-content').style.transform =
+        "translate(-50%, calc(-50% + " + (offset * 0.2) + "px))";
     });
     
     function scrollToTop() {
