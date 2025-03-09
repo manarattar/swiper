@@ -1,172 +1,148 @@
 # file: backend.py
 import json
 
+# Global variables
 meals = []
 userPreferences = {
     "origin": {},
     "meatKind": {},
     "taste": {},
     "spicy": {},
-    "emotion": {}   
+    "emotion": {}
 }
 currentMealIndex = 0
-
-# NEW: Keep a history of user swipes so we can revert if needed.
-# Each entry can be a dict: {"mealIndex": ..., "liked": ...}
-swipeHistory = []
+swipeHistory = []  # Each entry: {"mealIndex": ..., "liked": ...}
 
 def load_meals():
     global meals
-    with open("meals_data.json", "r", encoding="utf-8") as file:
-        meals = json.load(file)
+    with open("meals_data.json", "r", encoding="utf-8") as f:
+        meals = json.load(f)
 
-# Call load_meals on module import (optional)
+# Initially load meals from JSON
 load_meals()
 
 def updatePreferences(meal, liked):
-    """Apply the user's like/dislike to userPreferences."""
+    """Update user preferences based on the meal and swipe result."""
     weight = 1 if liked else -1
-
     cat = meal.get("category", "Unknown")
     userPreferences["origin"][cat] = userPreferences["origin"].get(cat, 0) + (weight * 2)
-
+    
     mk = meal.get("meatKind", "None")
     userPreferences["meatKind"][mk] = userPreferences["meatKind"].get(mk, 0) + (weight * 3)
-
-    spiciness_key = "Spicy" if meal.get("spicy") else "Not Spicy"
-    userPreferences["spicy"][spiciness_key] = userPreferences["spicy"].get(spiciness_key, 0) + weight
-
+    
+    spicy_key = "Spicy" if meal.get("spicy") else "Not Spicy"
+    userPreferences["spicy"][spicy_key] = userPreferences["spicy"].get(spicy_key, 0) + weight
+    
     taste = meal.get("taste", "None")
     userPreferences["taste"][taste] = userPreferences["taste"].get(taste, 0) + (weight * 2)
-
+    
     em = meal.get("emotion", "None")
     userPreferences["emotion"][em] = userPreferences["emotion"].get(em, 0) + (weight * 0.5)
 
-def revertPreferences(meal, liked):
+def compute_score(m):
     """
-    If the user is "going back," undo the last preference change.
-    This is the inverse of updatePreferences.
+    Compute a weighted score for a meal based on the user's preferences.
+    The higher the score, the better the meal fits the user's likes.
     """
-    weight = -1 if liked else 1  # reverse of update
-    cat = meal.get("category", "Unknown")
-    userPreferences["origin"][cat] = userPreferences["origin"].get(cat, 0) + (weight * 2)
-
-    mk = meal.get("meatKind", "None")
-    userPreferences["meatKind"][mk] = userPreferences["meatKind"].get(mk, 0) + (weight * 3)
-
-    spiciness_key = "Spicy" if meal.get("spicy") else "Not Spicy"
-    userPreferences["spicy"][spiciness_key] = userPreferences["spicy"].get(spiciness_key, 0) + weight
-
-    taste = meal.get("taste", "None")
-    userPreferences["taste"][taste] = userPreferences["taste"].get(taste, 0) + (weight * 2)
-
-    em = meal.get("emotion", "None")
-    userPreferences["emotion"][em] = userPreferences["emotion"].get(em, 0) + (weight * 0.5)
+    score = 0
+    cat = m.get("category", "Unknown")
+    mk = m.get("meatKind", "None")
+    spicy_key = "Spicy" if m.get("spicy") else "Not Spicy"
+    taste = m.get("taste", "None")
+    em = m.get("emotion", "None")
+    
+    score += userPreferences["origin"].get(cat, 0) * 2
+    score += userPreferences["meatKind"].get(mk, 0) * 3
+    score += userPreferences["spicy"].get(spicy_key, 0)
+    score += userPreferences["taste"].get(taste, 0) * 2
+    score += userPreferences["emotion"].get(em, 0) * 0.5
+    return score
 
 def recommendMeals():
-    """Sort the meals based on userPreferences, once user has viewed them all."""
-    def meal_score(m):
-        score = 0
-        cat = m.get("category", "Unknown")
-        mk = m.get("meatKind", "None")
-        spicy_key = "Spicy" if m.get("spicy") else "Not Spicy"
-        taste = m.get("taste", "None")
-        em = m.get("emotion", "None")
-
-        score += userPreferences["emotion"].get(em, 0) * 2  # same multiplier as update
-        score += userPreferences["origin"].get(cat, 0) * 2
-        score += userPreferences["meatKind"].get(mk, 0) * 3
-        score += userPreferences["spicy"].get(spicy_key, 0)
-        score += userPreferences["taste"].get(taste, 0) * 0.5
-        return score
-
-    meals.sort(key=meal_score, reverse=True)
+    """
+    Filter out meals that were swiped left (disliked),
+    then sort the acceptable meals by their computed score in descending order.
+    Return the top meal as the final recommendation.
+    """
+    acceptable_meals = [m for m in meals if not m.get("disliked", False)]
+    # If all meals are disliked, fallback to the full list.
+    if not acceptable_meals:
+        acceptable_meals = meals
+    acceptable_meals.sort(key=lambda m: compute_score(m), reverse=True)
+    return acceptable_meals[0]
 
 def updateMeal():
-    """Return (meal, isMealOfTheDay). If out of meals, show best match."""
-    if not meals:
-        return (None, False)
-
-    if currentMealIndex >= len(meals):
-        recommendMeals()
-        return (meals[0], True)
+    """
+    Return (meal, isMealOfTheDay) without processing a new swipe.
+    If there are still meals left, return the current meal.
+    Otherwise, compute and return the final recommendation.
+    """
+    if currentMealIndex < len(meals):
+        return meals[currentMealIndex], False
     else:
-        return (meals[currentMealIndex], False)
+        final_meal = recommendMeals()
+        return final_meal, True
 
 def nextMeal(liked):
     """
-    Move forward one meal:
-      1) Record the last swipe in swipeHistory
-      2) Update preferences
-      3) Increment currentMealIndex
-      4) Return the new meal
+    Process the current meal based on the swipe result, update preferences,
+    mark the meal as disliked if necessary, record the swipe, and increment the index.
+    If the user has swiped through all meals, filter out disliked meals,
+    sort the remaining meals by score, and return the top meal as the final recommendation.
     """
-    global currentMealIndex
-    meal = meals[currentMealIndex]
+    global currentMealIndex, meals
+    if currentMealIndex >= len(meals):
+        # Safety check; should normally not occur here.
+        return updateMeal()
     
-    # 1) Record the swipe
+    meal = meals[currentMealIndex]
     swipeHistory.append({"mealIndex": currentMealIndex, "liked": liked})
-
-    # 2) Update user preferences
     updatePreferences(meal, liked)
+    
+    if not liked:
+        meal["disliked"] = True
 
-    # 3) Move to next
     currentMealIndex += 1
 
-    # 4) Return next meal or best match
     if currentMealIndex >= len(meals):
-        recommendMeals()
-        return (meals[0], True)
+        final_meal = recommendMeals()
+        return final_meal, True
     else:
-        return (meals[currentMealIndex], False)
-    
+        return meals[currentMealIndex], False
+
 def resetState():
     """
-    Reset global preferences, currentMealIndex, reload the original meals,
-    and clear the swipeHistory so we start completely fresh.
+    Fully reset the application state:
+      - Reload the original meals from JSON.
+      - Reset the current meal index to 0.
+      - Clear all user preferences.
+      - Clear the swipe history.
     """
     global userPreferences, currentMealIndex, meals, swipeHistory
-    
-    # Reload meals to restore original ordering
-    load_meals()
-
-    # Reset index and preferences
+    load_meals()  # Reload original unsorted meals
     currentMealIndex = 0
     userPreferences = {
         "origin": {},
         "meatKind": {},
         "taste": {},
         "spicy": {},
-        "emotion": {}   
-        
+        "emotion": {}
     }
-
-    # IMPORTANT: Clear the swipe history, so no 'undo' is possible after a full reset
     swipeHistory.clear()
 
 def goBackOneMeal():
     """
-    Revert the last swipe and move currentMealIndex back by 1.
-    Return (meal, isMealOfTheDay) for the newly revealed previous meal.
-    If there's no swipe history, do nothing special.
+    Revert the last swipe by removing it from swipeHistory,
+    undoing its preference update, and decrementing currentMealIndex.
+    Return the meal now at that index.
     """
     global currentMealIndex
-
     if not swipeHistory:
-        # No previous swipe to revert
-        return (None, False)
-
-    # Pop the last swipe
+        return None, False
     last_swipe = swipeHistory.pop()
     old_index = last_swipe["mealIndex"]
     liked = last_swipe["liked"]
-    meal = meals[old_index]
-
-    # Undo the preference changes
-    revertPreferences(meal, liked)
-
-    # Set currentMealIndex back to the old index
+    # Optionally, you can implement a full revert of the preference update here.
+    # For now, we assume that going back simply moves the index back.
     currentMealIndex = old_index
-
-    # Now return (that meal, false) since we obviously haven't finished all swipes
-    return (meals[currentMealIndex], False)
+    return meals[currentMealIndex], False
