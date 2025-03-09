@@ -5,15 +5,21 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>SwipeEat Landing Page</title>
   <style>
-    /* Global Styles */
-    body, html {
+    /* Global Styles & Scroll-Snap */
+    html {
       margin: 0;
       padding: 0;
       scroll-behavior: smooth;
+      scroll-snap-type: y mandatory;
       font-family: Arial, sans-serif;
+    }
+    body {
+      margin: 0;
+      padding: 0;
     }
     .section {
       width: 100%;
+      scroll-snap-align: start;
     }
     
     /* Navigation Menu */
@@ -46,11 +52,12 @@
       color: #ff5722;
     }
     
-    /* Block 1: Hero Section */
+    /* Block 1: Hero Section with Parallax & Animation */
     .hero {
       background-image: url('static/meal_images/landing_bg.jpg');
       background-size: cover;
       background-position: center;
+      background-attachment: fixed;
       height: 100vh;
       display: flex;
       flex-direction: column;
@@ -58,13 +65,13 @@
       align-items: center;
       color: white;
       text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.7);
-      /* Add top padding to ensure content isn't hidden behind the fixed navbar */
-      padding-top: 60px;
+      padding-top: 60px; /* To avoid overlap with the fixed navbar */
       box-sizing: border-box;
     }
     .hero h1 {
       font-size: 4rem;
       margin-bottom: 20px;
+      animation: fadeIn 1s ease-out forwards;
     }
     .hero button {
       padding: 15px 30px;
@@ -75,12 +82,15 @@
       color: white;
       cursor: pointer;
       transition: background-color 0.3s ease;
+      animation: fadeIn 1s ease-out forwards;
+      animation-delay: 0.3s;
+      opacity: 0;
     }
     .hero button:hover {
       background-color: #e64a19;
     }
     
-    /* Block 2: Swipe Images Section */
+    /* Block 2: Swipe Images Section with Fade-In Animation */
     .swipe-section {
       background-color: #f5f5f5;
       padding: 50px 0;
@@ -91,13 +101,24 @@
       border-radius: 10px;
       overflow: hidden;
       box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+      animation: fadeIn 1s ease-out forwards;
+      opacity: 0;
+    }
+    .swipe-image:nth-child(1) {
+      animation-delay: 0.2s;
+    }
+    .swipe-image:nth-child(2) {
+      animation-delay: 0.4s;
+    }
+    .swipe-image:nth-child(3) {
+      animation-delay: 0.6s;
     }
     .swipe-image img {
       width: 100%;
       display: block;
     }
     
-    /* Block 3: About Us Section */
+    /* Block 3: About Us Section with Animation */
     .about-section {
       padding: 50px 20px;
       background-color: #fff;
@@ -107,12 +128,16 @@
       text-align: center;
       margin-bottom: 30px;
       font-size: 2.5rem;
+      animation: fadeIn 1s ease-out forwards;
     }
     .about-description {
       max-width: 800px;
       margin: 0 auto 40px;
       line-height: 1.6;
       text-align: center;
+      animation: fadeIn 1s ease-out forwards;
+      animation-delay: 0.2s;
+      opacity: 0;
     }
     .founders {
       display: flex;
@@ -127,6 +152,14 @@
       overflow: hidden;
       box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
       text-align: center;
+      animation: fadeIn 1s ease-out forwards;
+      opacity: 0;
+    }
+    .founder-card:nth-child(1) {
+      animation-delay: 0.4s;
+    }
+    .founder-card:nth-child(2) {
+      animation-delay: 0.6s;
     }
     .founder-card img {
       width: 100%;
@@ -135,6 +168,29 @@
     .founder-card h3 {
       margin: 15px 0;
       font-size: 1.5rem;
+    }
+    
+    /* Back-to-Top Button */
+    #backToTop {
+      position: fixed;
+      bottom: 30px;
+      right: 30px;
+      padding: 10px 15px;
+      font-size: 1rem;
+      background-color: #ff5722;
+      color: white;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+      display: none;
+      z-index: 1001;
+      transition: opacity 0.3s ease;
+    }
+    
+    /* Fade-In Keyframes Animation */
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(20px); }
+      to { opacity: 1; transform: translateY(0); }
     }
     
     /* Responsive Design */
@@ -158,11 +214,11 @@
 <body>
   
   <!-- Navigation Menu -->
-  <nav class="navbar">
+  <nav class="navbar" role="navigation" aria-label="Main Navigation">
     <ul>
-      <li><a href="#hero">Home</a></li>
-      <li><a href="#swipe">Tutorial</a></li>
-      <li><a href="#about">About</a></li>
+      <li><a href="#hero" aria-label="Navigate to Home section">Home</a></li>
+      <li><a href="#swipe" aria-label="Navigate to Tutorial section">Tutorial</a></li>
+      <li><a href="#about" aria-label="Navigate to About section">About</a></li>
     </ul>
   </nav>
   
@@ -175,13 +231,13 @@
   <!-- Block 2: Swipe Images Section -->
   <section id="swipe" class="section swipe-section">
     <div class="swipe-image">
-      <img src="static/meal_images/tutorial.png" alt="Swipe Image 1">
+      <img src="static/meal_images/tutorial.png" alt="Tutorial Image 1" loading="lazy">
     </div>
     <div class="swipe-image">
-      <img src="static/meal_images/tutorial.png" alt="Swipe Image 2">
+      <img src="static/meal_images/tutorial.png" alt="Tutorial Image 2" loading="lazy">
     </div>
     <div class="swipe-image">
-      <img src="static/meal_images/tutorial.png" alt="Swipe Image 3">
+      <img src="static/meal_images/tutorial.png" alt="Tutorial Image 3" loading="lazy">
     </div>
   </section>
   
@@ -195,20 +251,41 @@
     </div>
     <div class="founders">
       <div class="founder-card">
-        <img src="static/meal_images/raihan.jpeg" alt="Founder 1">
+        <img src="static/meal_images/raihan.jpeg" alt="Raihan Karim" loading="lazy">
         <h3>Raihan Karim</h3>
       </div>
       <div class="founder-card">
-        <img src="static/meal_images/manar.jpeg" alt="Founder 2">
+        <img src="static/meal_images/manar.jpeg" alt="Manar Attar" loading="lazy">
         <h3>Manar Attar</h3>
       </div>
     </div>
   </section>
   
+  <!-- Back-to-Top Button -->
+  <button id="backToTop" aria-label="Back to top" onclick="scrollToTop()">Top</button>
+  
   <script>
     function tryItOut() {
       // Redirect or perform an action when the "Try it out" button is clicked.
       window.location.href = "{{ url_for('welcome') }}"; // Replace with your desired destination URL.
+    }
+    
+    // Back-to-Top Button Functionality
+    const backToTopButton = document.getElementById('backToTop');
+    window.addEventListener('scroll', () => {
+      if (window.pageYOffset > 300) {
+        backToTopButton.style.display = 'block';
+        backToTopButton.style.opacity = '1';
+      } else {
+        backToTopButton.style.opacity = '0';
+        setTimeout(() => {
+          backToTopButton.style.display = 'none';
+        }, 300);
+      }
+    });
+    
+    function scrollToTop() {
+      window.scrollTo({ top: 0, behavior: 'smooth' });
     }
   </script>
   
