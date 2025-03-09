@@ -2,6 +2,8 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
+  <!-- Import Montserrat font from Google Fonts -->
+  <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;700&display=swap" rel="stylesheet">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
   <title>SwipeEat Landing Page</title>
   <style>
@@ -10,7 +12,7 @@
       margin: 0;
       padding: 0;
       scroll-behavior: auto; /* We'll handle smooth scrolling manually */
-      font-family: Arial, sans-serif;
+      font-family: 'Montserrat', sans-serif;
       overflow-x: hidden;
       touch-action: manipulation;
     }
@@ -139,7 +141,7 @@
       display: block;
     }
     
-    /* Block 3: About Us Section with Animation */
+    /* Block 3: About Us Section with Vision, Mission, and Team */
     .about-section {
       padding: 50px 20px;
       background-color: #fff;
@@ -151,16 +153,20 @@
       font-size: 2.5rem;
       animation: fadeIn 1s ease-out forwards;
     }
-    .about-description {
+    .vision-mission {
       max-width: 800px;
       margin: 0 auto 40px;
       line-height: 1.6;
       text-align: center;
-      animation: fadeIn 1s ease-out forwards;
-      animation-delay: 0.2s;
-      opacity: 0;
     }
-    /* "The team" Headline Above Founders */
+    .vision-mission h3 {
+      font-size: 1.8rem;
+      margin: 20px 0 10px;
+    }
+    .vision-mission p {
+      font-size: 1.1rem;
+      margin: 0 0 20px;
+    }
     .team-headline {
       text-align: center;
       font-size: 2rem;
@@ -198,7 +204,7 @@
       font-size: 1.5rem;
     }
     
-    /* Block 4: Story Section */
+    /* Block 4: Story Section with Food Gallery */
     .story-section {
       padding: 50px 20px;
       background-color: #fafafa;
@@ -215,11 +221,12 @@
       margin: 0 auto 40px;
       line-height: 1.6;
       text-align: center;
+      font-size: 1.1rem;
       animation: fadeIn 1s ease-out forwards;
       animation-delay: 0.2s;
       opacity: 0;
     }
-    /* Food Gallery: 2 small images, 1 big image, 2 small images */
+    /* Food Gallery Layout Using Columns */
     .food-gallery {
       display: grid;
       grid-template-columns: repeat(2, 1fr);
@@ -229,16 +236,18 @@
     .food-gallery .big {
       grid-column: 1 / -1;
     }
-    .food-gallery .gallery-item {
+    .gallery-item {
       position: relative;
       width: 100%;
-      aspect-ratio: 1; /* Maintain a square shape */
+      aspect-ratio: 1; /* Square shape */
       overflow: hidden;
     }
-    .food-gallery .gallery-item img {
+    .gallery-item img {
       width: 100%;
       height: 100%;
       object-fit: cover;
+      border-radius: 10px;
+      box-shadow: 0 4px 8px rgba(0,0,0,0.1);
     }
     
     /* Back-to-Top Button */
@@ -352,13 +361,18 @@
     </div>
   </section>
   
-  <!-- Block 3: About Us Section -->
+  <!-- Block 3: About Us Section with Vision, Mission, and Team -->
   <section id="about" class="section about-section">
     <div class="container">
       <h2>About SwipeEat</h2>
-      <div class="about-description">
+      <div class="vision-mission">
+        <h3>Vision</h3>
         <p>
-          At SwipeEat, our vision is to revolutionize the way people discover and enjoy culinary experiences. Our mission is to connect food enthusiasts with the best local eateries, fostering a community built on trust, quality, and innovation.
+          At SwipeEat, our vision is to redefine the restaurant food experience by seamlessly blending culinary exploration with smart choice technology. We aspire to create an immersive, personalized menu journey that captivates food, transforming meal selection from a routine task into a delightful, intuitive adventure.
+        </p>
+        <h3>Mission</h3>
+        <p>
+          Our mission is to equip restaurants with a smart, interactive platform that revolutionizes how their guests engage with menus. Through a playful swipe interface and intelligent, preference-based recommendations, we make choosing the perfect dish effortless, exciting, and uniquely tailored to individual tastes, enhancing satisfaction and making every restaurant experience memorable.
         </p>
       </div>
       <!-- "The team" Headline -->
@@ -376,31 +390,31 @@
     </div>
   </section>
   
-  <!-- Block 4: Story Section -->
+  <!-- Block 4: Story Section with Food Gallery -->
   <section id="story" class="section story-section">
     <div class="container">
       <h2>The Story Behind SwipeEat</h2>
       <div class="story-description">
         <p>
-          We are food addicts who love to visit new restaurants, try out new meals, and experience new flavors. On top of that, we are tech experts. Therefore, we decided to combine our talent and passion for food to provide a smart way to choose a new meal that matches our preferences and feelings.
+          As explorers of taste and pioneers of technology, we constantly chase extraordinary food experiences. One evening, amid endless menu scrolling, inspiration struck... What if choosing a meal was as intuitive as a heartbeat? From that moment, our innovative, SwipeEat platform was born, effortlessly guiding you to dishes you'll adore.
         </p>
       </div>
       <!-- Updated Food Gallery: 2 small images, 1 big image, 2 small images -->
       <div class="food-gallery">
         <div class="gallery-item">
-            <img src="static/meal_images/food_gallery.jpeg" alt="Restaurant Visit 1" loading="lazy">
+          <img src="static/meal_images/food_gallery.jpeg" alt="Restaurant Visit 1" loading="lazy">
         </div>
         <div class="gallery-item">
-            <img src="static/meal_images/food_gallery1.jpeg" alt="Restaurant Visit 1" loading="lazy">
+          <img src="static/meal_images/food_gallery1.jpeg" alt="Restaurant Visit 2" loading="lazy">
         </div>
         <div class="gallery-item big">
-            <img src="static/meal_images/food_gallery2.jpeg" alt="Restaurant Visit 1" loading="lazy">
+          <img src="static/meal_images/food_gallery2.jpeg" alt="Restaurant Visit 3" loading="lazy">
         </div>
         <div class="gallery-item">
-            <img src="static/meal_images/food_gallery3.jpeg" alt="Restaurant Visit 1" loading="lazy">
+          <img src="static/meal_images/food_gallery3.jpeg" alt="Restaurant Visit 4" loading="lazy">
         </div>
         <div class="gallery-item">
-            <img src="static/meal_images/food_gallery4.jpeg" alt="Restaurant Visit 1" loading="lazy">
+          <img src="static/meal_images/food_gallery4.jpeg" alt="Restaurant Visit 5" loading="lazy">
         </div>
       </div>
     </div>
