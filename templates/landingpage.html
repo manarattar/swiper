@@ -62,35 +62,44 @@
       color: #ff5722;
     }
     
-    /* Hero Section with Flexible Background Image */
+    /* Hero Section with Flexible Background Image and Moving Content */
     .hero {
       position: relative;
     }
     .hero-image-container {
       position: relative;
       width: 100%;
+      overflow: hidden;  /* Hide overflow from scaling */
     }
     .hero-bg {
       width: 100%;
       height: auto;
       display: block;
+      transform: scale(1.1);  /* Zoom in 10% */
+      transform-origin: center;
     }
-    /* Updated hero-content: full width and higher start position */
     .hero-content {
       position: absolute;
-      top: 45%; /* Higher initial position */
-      width: 100%;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
       text-align: center;
       color: white;
       text-shadow: 2px 2px 4px rgba(0,0,0,0.7);
-      transition: top 0.5s ease-out;
+      transition: transform 0.1s ease-out;
+      width: 100%;
     }
-    .hero-content h1 {
-      font-size: 4rem;
-      margin-bottom: 20px;
-      animation: fadeIn 2s ease-out forwards;
+    /* Headline takes full width */
+    .hero-content .full-width {
+      width: 100vw;
+      margin: 0;
+      text-align: center;
+      animation: fadeIn 1s ease-out forwards;
     }
-    .hero-content button {
+    .button-container {
+      margin-top: 20px;
+    }
+    .button-container button {
       padding: 15px 30px;
       font-size: 1.2rem;
       border: none;
@@ -100,10 +109,10 @@
       cursor: pointer;
       transition: background-color 0.3s ease;
       animation: fadeIn 1s ease-out forwards;
-      animation-delay: 0.9s;
+      animation-delay: 0.3s;
       opacity: 0;
     }
-    .hero-content button:hover {
+    .button-container button:hover {
       background-color: #e64a19;
     }
     
@@ -212,7 +221,7 @@
     
     /* Responsive Design for Tablets and Smaller Devices */
     @media (max-width: 768px) {
-      .hero-content h1 {
+      .hero-content .full-width {
         font-size: 2.5rem;
       }
       .founders {
@@ -232,10 +241,10 @@
     
     /* Additional Adjustments for Mobile Phones */
     @media (max-width: 480px) {
-      .hero-content h1 {
+      .hero-content .full-width {
         font-size: 2rem;
       }
-      .hero-content button {
+      .button-container button {
         font-size: 1rem;
         padding: 10px 20px;
       }
@@ -260,9 +269,9 @@
   <nav class="navbar" role="navigation" aria-label="Main Navigation">
     <div class="container">
       <ul>
-        <li><a href="#hero" aria-label="Navigate to Home section">Home</a></li>
-        <li><a href="#swipe" aria-label="Navigate to Tutorial section">Tutorial</a></li>
-        <li><a href="#about" aria-label="Navigate to About section">About</a></li>
+        <li><a href="#hero" data-target="#hero" aria-label="Navigate to Home section">Home</a></li>
+        <li><a href="#swipe" data-target="#swipe" aria-label="Navigate to Tutorial section">Tutorial</a></li>
+        <li><a href="#about" data-target="#about" aria-label="Navigate to About section">About</a></li>
       </ul>
     </div>
   </nav>
@@ -271,9 +280,11 @@
   <section id="hero" class="section hero">
     <div class="hero-image-container">
       <img src="static/meal_images/landing_bg.jpg" alt="Landing Background" class="hero-bg" loading="lazy">
-      <div class="hero-content container">
-        <h1>Welcome to SwipeEat</h1>
-        <button onclick="tryItOut()">Try it out</button>
+      <div class="hero-content">
+        <h1 class="full-width">Welcome to SwipeEat</h1>
+        <div class="button-container container">
+          <button onclick="tryItOut()">Try it out</button>
+        </div>
       </div>
     </div>
   </section>
@@ -316,7 +327,7 @@
   </section>
   
   <!-- Back-to-Top Button -->
-  <button id="backToTop" aria-label="Back to top" onclick="scrollToTop()">Top</button>
+  <button id="backToTop" aria-label="Back to top" onclick="smoothScrollTo('#hero', 2000)">Top</button>
   
   <script>
     function tryItOut() {
@@ -324,13 +335,47 @@
       window.location.href = "{{ url_for('welcome') }}"; // Replace with your desired destination URL.
     }
     
-    // Back-to-Top Button Functionality
+    // Custom Smooth Scroll Function with Duration Control
+    function smoothScrollTo(targetSelector, duration) {
+      const targetElement = document.querySelector(targetSelector);
+      if (!targetElement) return;
+      const targetPosition = targetElement.getBoundingClientRect().top + window.pageYOffset;
+      const startPosition = window.pageYOffset;
+      const distance = targetPosition - startPosition;
+      let startTime = null;
+      
+      function animation(currentTime) {
+        if (startTime === null) startTime = currentTime;
+        const timeElapsed = currentTime - startTime;
+        const run = ease(timeElapsed, startPosition, distance, duration);
+        window.scrollTo(0, run);
+        if (timeElapsed < duration) requestAnimationFrame(animation);
+      }
+      
+      // Ease-in-out quadratic
+      function ease(t, b, c, d) {
+        t /= d/2;
+        if (t < 1) return c/2*t*t + b;
+        t--;
+        return -c/2 * (t*(t-2) - 1) + b;
+      }
+      
+      requestAnimationFrame(animation);
+    }
+    
+    // Intercept clicks on nav links to use custom smooth scroll
+    document.querySelectorAll('.navbar a').forEach(link => {
+      link.addEventListener('click', function(e) {
+        e.preventDefault();
+        const target = this.getAttribute('data-target');
+        smoothScrollTo(target, 2000); // 2000ms duration for a slow transition
+      });
+    });
+    
+    // Back-to-Top Button Functionality and Parallax Effect
     const backToTopButton = document.getElementById('backToTop');
     window.addEventListener('scroll', () => {
-      const offset = window.pageYOffset;
-      
-      // Update back-to-top button visibility
-      if (offset > 300) {
+      if (window.pageYOffset > 300) {
         backToTopButton.style.display = 'block';
         backToTopButton.style.opacity = '1';
       } else {
@@ -340,14 +385,11 @@
         }, 300);
       }
       
-      // Update hero content position to create a smooth moving effect.
-      // This will start from 15% and move downward as you scroll.
-      document.querySelector('.hero-content').style.top = "calc(15% + " + (offset * 0.2) + "px)";
+      // Update the hero content position for a subtle parallax effect
+      const offset = window.pageYOffset;
+      document.querySelector('.hero-content').style.transform =
+        "translate(-50%, calc(-50% + " + (offset * 0.2) + "px))";
     });
-    
-    function scrollToTop() {
-      window.scrollTo({ top: 0, behavior: 'smooth' });
-    }
   </script>
   
 </body>
