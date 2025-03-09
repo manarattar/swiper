@@ -75,21 +75,20 @@
       height: auto;
       display: block;
     }
+    /* Updated hero-content: full width and higher start position */
     .hero-content {
       position: absolute;
-      top: 50%;
-      left: 50%;
-      /* The initial transform centers the content */
-      transform: translate(-50%, -50%);
+      top: 45%; /* Higher initial position */
+      width: 100%;
       text-align: center;
       color: white;
       text-shadow: 2px 2px 4px rgba(0,0,0,0.7);
-      transition: transform 0.1s ease-out;
+      transition: top 0.5s ease-out;
     }
     .hero-content h1 {
       font-size: 4rem;
       margin-bottom: 20px;
-      animation: fadeIn 1s ease-out forwards;
+      animation: fadeIn 2s ease-out forwards;
     }
     .hero-content button {
       padding: 15px 30px;
@@ -101,7 +100,7 @@
       cursor: pointer;
       transition: background-color 0.3s ease;
       animation: fadeIn 1s ease-out forwards;
-      animation-delay: 0.3s;
+      animation-delay: 0.9s;
       opacity: 0;
     }
     .hero-content button:hover {
@@ -328,7 +327,10 @@
     // Back-to-Top Button Functionality
     const backToTopButton = document.getElementById('backToTop');
     window.addEventListener('scroll', () => {
-      if (window.pageYOffset > 300) {
+      const offset = window.pageYOffset;
+      
+      // Update back-to-top button visibility
+      if (offset > 300) {
         backToTopButton.style.display = 'block';
         backToTopButton.style.opacity = '1';
       } else {
@@ -338,11 +340,9 @@
         }, 300);
       }
       
-      // Update the hero content position based on scroll offset
-      const offset = window.pageYOffset;
-      // Adjust the factor (0.2) as needed to control the movement speed
-      document.querySelector('.hero-content').style.transform =
-        "translate(-50%, calc(-50% + " + (offset * 0.2) + "px))";
+      // Update hero content position to create a smooth moving effect.
+      // This will start from 15% and move downward as you scroll.
+      document.querySelector('.hero-content').style.top = "calc(15% + " + (offset * 0.2) + "px)";
     });
     
     function scrollToTop() {
