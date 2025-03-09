@@ -60,6 +60,11 @@ header {
     width: 100%;
     border-radius: 10px;
 }
+#meal-img {
+    transition: opacity 0.3s ease-in-out;
+    opacity: 1; /* Start fully visible */
+  }
+  
 
 .card h2 {
     margin: 10px 0;
