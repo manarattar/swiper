@@ -16,7 +16,6 @@
     }
     .section {
       width: 100%;
-      /* Removed scroll-snap properties to prevent abrupt snapping */
     }
     
     /* Container for Centralized, Responsive Content */
@@ -77,7 +76,7 @@
       position: absolute;
       top: 50%;
       left: 50%;
-      /* Initially centered; its transform will be updated on scroll */
+      /* Initially centered; transform updated on scroll */
       transform: translate(-50%, -50%);
       text-align: center;
       color: white;
@@ -161,6 +160,13 @@
       animation-delay: 0.2s;
       opacity: 0;
     }
+    /* "The team" Headline Above Founders */
+    .team-headline {
+      text-align: center;
+      font-size: 2rem;
+      margin: 20px 0;
+      animation: fadeIn 1s ease-out forwards;
+    }
     .founders {
       display: flex;
       flex-wrap: wrap;
@@ -190,6 +196,49 @@
     .founder-card h3 {
       margin: 15px 0;
       font-size: 1.5rem;
+    }
+    
+    /* Block 4: Story Section */
+    .story-section {
+      padding: 50px 20px;
+      background-color: #fafafa;
+      color: #333;
+    }
+    .story-section h2 {
+      text-align: center;
+      margin-bottom: 20px;
+      font-size: 2.5rem;
+      animation: fadeIn 1s ease-out forwards;
+    }
+    .story-description {
+      max-width: 800px;
+      margin: 0 auto 40px;
+      line-height: 1.6;
+      text-align: center;
+      animation: fadeIn 1s ease-out forwards;
+      animation-delay: 0.2s;
+      opacity: 0;
+    }
+    /* Food Gallery: 2 small images, 1 big image, 2 small images */
+    .food-gallery {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 10px;
+    }
+    /* Big image spans both columns */
+    .food-gallery .big {
+      grid-column: 1 / -1;
+    }
+    .food-gallery .gallery-item {
+      position: relative;
+      width: 100%;
+      aspect-ratio: 1; /* Maintain a square shape */
+      overflow: hidden;
+    }
+    .food-gallery .gallery-item img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
     }
     
     /* Back-to-Top Button */
@@ -233,6 +282,9 @@
       .swipe-section {
         padding: 40px 0;
       }
+      .food-gallery {
+        grid-template-columns: repeat(2, 1fr);
+      }
     }
     
     /* Additional Adjustments for Mobile Phones */
@@ -253,7 +305,7 @@
       .swipe-image {
         margin: 10px auto;
       }
-      .about-section {
+      .about-section, .story-section {
         padding: 30px 10px;
       }
     }
@@ -309,6 +361,8 @@
           At SwipeEat, our vision is to revolutionize the way people discover and enjoy culinary experiences. Our mission is to connect food enthusiasts with the best local eateries, fostering a community built on trust, quality, and innovation.
         </p>
       </div>
+      <!-- "The team" Headline -->
+      <h3 class="team-headline">The team</h3>
       <div class="founders">
         <div class="founder-card">
           <img src="static/meal_images/raihan.jpeg" alt="Raihan Karim" loading="lazy">
@@ -317,6 +371,36 @@
         <div class="founder-card">
           <img src="static/meal_images/manar.jpeg" alt="Manar Attar" loading="lazy">
           <h3>Manar Attar</h3>
+        </div>
+      </div>
+    </div>
+  </section>
+  
+  <!-- Block 4: Story Section -->
+  <section id="story" class="section story-section">
+    <div class="container">
+      <h2>The Story Behind SwipeEat</h2>
+      <div class="story-description">
+        <p>
+          We are food addicts who love to visit new restaurants, try out new meals, and experience new flavors. On top of that, we are tech experts. Therefore, we decided to combine our talent and passion for food to provide a smart way to choose a new meal that matches our preferences and feelings.
+        </p>
+      </div>
+      <!-- Updated Food Gallery: 2 small images, 1 big image, 2 small images -->
+      <div class="food-gallery">
+        <div class="gallery-item">
+            <img src="static/meal_images/food_gallery.jpeg" alt="Restaurant Visit 1" loading="lazy">
+        </div>
+        <div class="gallery-item">
+            <img src="static/meal_images/food_gallery1.jpeg" alt="Restaurant Visit 1" loading="lazy">
+        </div>
+        <div class="gallery-item big">
+            <img src="static/meal_images/food_gallery2.jpeg" alt="Restaurant Visit 1" loading="lazy">
+        </div>
+        <div class="gallery-item">
+            <img src="static/meal_images/food_gallery3.jpeg" alt="Restaurant Visit 1" loading="lazy">
+        </div>
+        <div class="gallery-item">
+            <img src="static/meal_images/food_gallery4.jpeg" alt="Restaurant Visit 1" loading="lazy">
         </div>
       </div>
     </div>
