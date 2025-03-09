@@ -1,0 +1,216 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SwipeEat Landing Page</title>
+  <style>
+    /* Global Styles */
+    body, html {
+      margin: 0;
+      padding: 0;
+      scroll-behavior: smooth;
+      font-family: Arial, sans-serif;
+    }
+    .section {
+      width: 100%;
+    }
+    
+    /* Navigation Menu */
+    .navbar {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      background-color: rgba(255, 255, 255, 0.95);
+      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+      z-index: 1000;
+    }
+    .navbar ul {
+      list-style: none;
+      margin: 0;
+      padding: 10px 20px;
+      display: flex;
+      justify-content: center;
+    }
+    .navbar ul li {
+      margin: 0 20px;
+    }
+    .navbar ul li a {
+      text-decoration: none;
+      color: #333;
+      font-weight: bold;
+      transition: color 0.3s ease;
+    }
+    .navbar ul li a:hover {
+      color: #ff5722;
+    }
+    
+    /* Block 1: Hero Section */
+    .hero {
+      background-image: url('static/meal_images/landing_bg.jpg');
+      background-size: cover;
+      background-position: center;
+      height: 100vh;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      color: white;
+      text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.7);
+      /* Add top padding to ensure content isn't hidden behind the fixed navbar */
+      padding-top: 60px;
+      box-sizing: border-box;
+    }
+    .hero h1 {
+      font-size: 4rem;
+      margin-bottom: 20px;
+    }
+    .hero button {
+      padding: 15px 30px;
+      font-size: 1.2rem;
+      border: none;
+      border-radius: 5px;
+      background-color: #ff5722;
+      color: white;
+      cursor: pointer;
+      transition: background-color 0.3s ease;
+    }
+    .hero button:hover {
+      background-color: #e64a19;
+    }
+    
+    /* Block 2: Swipe Images Section */
+    .swipe-section {
+      background-color: #f5f5f5;
+      padding: 50px 0;
+    }
+    .swipe-image {
+      margin: 20px auto;
+      max-width: 90%;
+      border-radius: 10px;
+      overflow: hidden;
+      box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+    }
+    .swipe-image img {
+      width: 100%;
+      display: block;
+    }
+    
+    /* Block 3: About Us Section */
+    .about-section {
+      padding: 50px 20px;
+      background-color: #fff;
+      color: #333;
+    }
+    .about-section h2 {
+      text-align: center;
+      margin-bottom: 30px;
+      font-size: 2.5rem;
+    }
+    .about-description {
+      max-width: 800px;
+      margin: 0 auto 40px;
+      line-height: 1.6;
+      text-align: center;
+    }
+    .founders {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+      gap: 20px;
+    }
+    .founder-card {
+      width: 300px;
+      border: 1px solid #ddd;
+      border-radius: 10px;
+      overflow: hidden;
+      box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+      text-align: center;
+    }
+    .founder-card img {
+      width: 100%;
+      height: auto;
+    }
+    .founder-card h3 {
+      margin: 15px 0;
+      font-size: 1.5rem;
+    }
+    
+    /* Responsive Design */
+    @media (max-width: 768px) {
+      .hero h1 {
+        font-size: 2.5rem;
+      }
+      .founders {
+        flex-direction: column;
+        align-items: center;
+      }
+      .founder-card {
+        width: 80%;
+      }
+      .navbar ul {
+        justify-content: center;
+      }
+    }
+  </style>
+</head>
+<body>
+  
+  <!-- Navigation Menu -->
+  <nav class="navbar">
+    <ul>
+      <li><a href="#hero">Home</a></li>
+      <li><a href="#swipe">Tutorial</a></li>
+      <li><a href="#about">About</a></li>
+    </ul>
+  </nav>
+  
+  <!-- Block 1: Hero Section -->
+  <section id="hero" class="section hero">
+    <h1>Welcome to SwipeEat</h1>
+    <button onclick="tryItOut()">Try it out</button>
+  </section>
+  
+  <!-- Block 2: Swipe Images Section -->
+  <section id="swipe" class="section swipe-section">
+    <div class="swipe-image">
+      <img src="static/meal_images/tutorial.png" alt="Swipe Image 1">
+    </div>
+    <div class="swipe-image">
+      <img src="static/meal_images/tutorial.png" alt="Swipe Image 2">
+    </div>
+    <div class="swipe-image">
+      <img src="static/meal_images/tutorial.png" alt="Swipe Image 3">
+    </div>
+  </section>
+  
+  <!-- Block 3: About Us Section -->
+  <section id="about" class="section about-section">
+    <h2>About SwipeEat</h2>
+    <div class="about-description">
+      <p>
+        At SwipeEat, our vision is to revolutionize the way people discover and enjoy culinary experiences. Our mission is to connect food enthusiasts with the best local eateries, fostering a community built on trust, quality, and innovation.
+      </p>
+    </div>
+    <div class="founders">
+      <div class="founder-card">
+        <img src="static/meal_images/raihan.jpeg" alt="Founder 1">
+        <h3>Raihan Karim</h3>
+      </div>
+      <div class="founder-card">
+        <img src="static/meal_images/manar.jpeg" alt="Founder 2">
+        <h3>Manar Attar</h3>
+      </div>
+    </div>
+  </section>
+  
+  <script>
+    function tryItOut() {
+      // Redirect or perform an action when the "Try it out" button is clicked.
+      window.location.href = "{{ url_for('welcome') }}"; // Replace with your desired destination URL.
+    }
+  </script>
+  
+</body>
+</html>

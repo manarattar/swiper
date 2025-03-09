@@ -13,6 +13,12 @@ app = Flask(__name__)
 # -------------------------------------------
 # PAGE ROUTES
 # -------------------------------------------
+@app.route("/landingpage")
+def landing():
+    """Render the landing page."""
+    return render_template("landingpage.html")
+
+
 @app.route("/")
 def welcome():
     """Render the welcome page."""
