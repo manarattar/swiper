@@ -61,7 +61,7 @@ header {
     border-radius: 10px;
 }
 #meal-img {
-    transition: opacity 0.3s ease-in-out;
+    transition: opacity 0.1s ease-in-out;
     opacity: 1; /* Start fully visible */
   }
   
@@ -74,6 +74,7 @@ header {
 .actions {
     margin-top: 20px;
 }
+
 
 .meal-emotion {
     font-style: italic; /* or bold, or a different color, etc. */
