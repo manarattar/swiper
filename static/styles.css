@@ -25,16 +25,22 @@ header {
     margin: 0;
 }
 
-/* Reusable hidden class for toggling visibility in JS */
+/* Reusable hidden class for toggling visibility */
 .hidden {
     display: none !important;
+}
+
+/* Invisible class for opacity-based hiding */
+.invisible {
+    opacity: 0;
 }
 
 /* Main container for the swiping page */
 .container {
     width: 80%; /* flexible for many screen sizes */
     max-width: 600px;
-    }
+    transition: opacity 0.3s ease-in-out;
+}
 
 /* Card styling */
 .card {
@@ -60,11 +66,12 @@ header {
     width: 100%;
     border-radius: 10px;
 }
+
+/* Transition for the meal image */
 #meal-img {
-    transition: opacity 0.1s ease-in-out;
-    opacity: 1; /* Start fully visible */
-  }
-  
+    transition: opacity 0.3s ease-in-out;
+    opacity: 1;
+}
 
 .card h2 {
     margin: 10px 0;
@@ -75,12 +82,10 @@ header {
     margin-top: 20px;
 }
 
-
 .meal-emotion {
-    font-style: italic; /* or bold, or a different color, etc. */
+    font-style: italic;
     margin-top: 5px;
-  }
-  
+}
 
 .buttons {
     display: flex;
@@ -133,16 +138,15 @@ header {
 
 /* Meal of the Day page container */
 .meal-of-the-day-container {
-    border-width: 10px;
     display: flex;
     flex-direction: column;
-    justify-content: center;  /* Vertically centers content */
-    align-items: center;      /* Horizontally centers content */
-    padding: 20px;            /* Optional: adds some spacing around the content */
-    background: #fff8e1;      /* Your desired background color or image */
-    box-sizing: border-box;   /* Ensures padding is in*/
-    width: 80%; /* flexible for many screen sizes */
-
+    justify-content: center;  /* vertically center content */
+    align-items: center;      /* horizontally center content */
+    padding: 20px;
+    background: #fff8e1;
+    box-sizing: border-box;
+    width: 80%;
+    max-width: 600px;
 }
 
 .meal-of-the-day-container img {
@@ -165,64 +169,57 @@ header {
     background-color: #0056b3;
 }
 
-/* Apply the imported Google Font across the entire body */
+/* Google Font Poppins */
 body, h1, h2, p, a, button {
     font-family: 'Poppins', Arial, sans-serif;
-  }
-  
-  /* For the welcome page specifically */
-  .welcome-body {
-    /* Food-themed background image (public domain or your own) */
-    background: url('meal_images/Bulgur_Pilaf.png') no-repeat center center;
+}
+
+/* Welcome page styling */
+.welcome-body {
+    background: url("{{ url_for('static', filename='images/food_background.jpg') }}") no-repeat center center;
     background-size: cover;
-    /* Center contents */
     display: flex;
     justify-content: center;
     align-items: center;
     height: 100vh;
     margin: 0;
-  }
-  
-  /* Container that holds the welcome text and button */
-  .welcome-container {
-    background-color: rgba(255, 255, 255, 0.85); /* Slightly transparent white overlay */
+}
+
+.welcome-container {
+    background-color: rgba(255, 255, 255, 0.85);
     padding: 40px;
     border-radius: 8px;
     max-width: 500px;
     text-align: center;
-    /* Optional subtle box shadow */
     box-shadow: 0 4px 8px rgba(0,0,0,0.1);
-  }
-  
-  /* Main title */
-  .app-title {
+}
+
+.app-title {
     font-size: 2.5rem;
     font-weight: 600;
     margin: 0 0 20px;
     color: #333;
-  }
-  
-  /* Welcome paragraph */
-  .welcome-message {
+}
+
+.welcome-message {
     font-size: 1.1rem;
     color: #555;
     margin-bottom: 30px;
     line-height: 1.4;
-  }
-  
-  /* "Got it!" button style */
-  .start-button {
+}
+
+.start-button {
     display: inline-block;
     padding: 14px 28px;
-    background-color: #28a745; /* greenish tone */
+    background-color: #28a745;
     color: #fff;
     text-decoration: none;
     font-weight: 600;
     border-radius: 6px;
     transition: background-color 0.3s ease, transform 0.2s ease;
-  }
-  
-  .start-button:hover {
+}
+
+.start-button:hover {
     background-color: #218838;
     transform: scale(1.05);
-  }
+}
