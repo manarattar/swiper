@@ -52,36 +52,42 @@ function fetchCurrentMeal() {
  * Update the UI to show the meal in the main container.
  */
 function displayMeal(meal) {
-    console.log("Displaying meal:", meal.name);
+  console.log("Displaying meal:", meal.name);
   
-    // Fade out current image
-    mealImg.style.opacity = 0;
+  // Hide the main container until the new content is fully loaded
+  mainContainer.classList.add("hidden");
+
+  // Preload the new image
+  const preloadImg = new Image();
   
-    // Preload the new image
-    const preloadImg = new Image();
-    preloadImg.onload = function() {
-      // Once the image is preloaded, update the image src
-      mealImg.src = meal.img;
-      // Fade it in
-      mealImg.style.opacity = 1;
-    };
-    preloadImg.src = meal.img;
-    
-    // Update the text fields immediately
+  // If the image fails to load, log an error and optionally display a fallback.
+  preloadImg.onerror = function() {
+    console.error("Error preloading image:", meal.img);
+    // Fallback: update text fields even if image fails, then show container
     mealName.textContent = meal.name;
     mealDescription.textContent = meal.description;
-    
-    // If you're displaying emotion info, update that as well:
-    const mealEmotion = document.getElementById("meal-emotion");
+    mealEmotion.textContent = meal.emotion ? `Emotion: ${meal.emotion} ${meal.emoji}` : "";
+    mainContainer.classList.remove("hidden");
+    card.classList.remove("swipe-left", "swipe-right");
+  };
+
+  preloadImg.onload = function() {
+    // Once the image is loaded, update the image src and text fields
+    mealImg.src = meal.img;
+    mealName.textContent = meal.name;
+    mealDescription.textContent = meal.description;
+    // Use the already-declared global variable "mealEmotion"
     if (mealEmotion) {
       mealEmotion.textContent = meal.emotion ? `Emotion: ${meal.emotion} ${meal.emoji}` : "";
     }
-    
-    // Ensure the main container is visible and reset any swipe animation classes.
+    // Reveal the container now that all content is updated
     mainContainer.classList.remove("hidden");
     card.classList.remove("swipe-left", "swipe-right");
-  }
-  
+  };
+
+  // Start preloading the image
+  preloadImg.src = meal.img;
+}
 /**
  * Handle a swipe action: "left" (dislike) or "right" (like).
  */
