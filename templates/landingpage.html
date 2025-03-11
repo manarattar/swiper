@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+<!DOCTYPE html> 
 <html lang="en">
 <head>
   <meta charset="UTF-8">
@@ -28,14 +28,14 @@
       box-sizing: border-box;
     }
     
-    /* Navigation Menu */
+    /* Navigation Menu - Semitransparent */
     .navbar {
       position: fixed;
       top: 0;
       left: 0;
       width: 100%;
-      background-color: rgba(255, 255, 255, 0.95);
-      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+      background-color: rgba(255, 255, 255, 0.3);
+      box-shadow: none;
       z-index: 1000;
     }
     .navbar ul {
@@ -58,7 +58,7 @@
       color: #ff5722;
     }
     
-    /* Hero Section with Flexible Background Image and Moving Content */
+    /* Hero Section with Responsive Background Image and Moving Content */
     .hero {
       position: relative;
     }
@@ -71,14 +71,13 @@
       width: 100%;
       height: auto;
       display: block;
-      transform: scale(1);  /* Zoom in 10% */
+      transform: scale(1); /* No zoom */
       transform-origin: center;
     }
     .hero-content {
       position: absolute;
       top: 70%;
       left: 50%;
-      /* Initially centered; transform updated on scroll */
       transform: translate(-50%, -50%);
       text-align: center;
       color: white;
@@ -86,30 +85,37 @@
       transition: transform 0.1s ease-out;
       width: 100%;
     }
-    /* Full-width headline */
+    /* (Optional) Full-width headline if needed */
     .hero-content .full-width {
       width: 100vw;
       margin: 0;
       text-align: center;
       animation: fadeIn 1s ease-out forwards;
     }
-    .button-container {
-      margin-top: 20px;
+    
+    /* Fixed Try it Out Button - Visible only on the first page */
+    .try-button-fixed {
+      position: fixed;
+      bottom: 10%;
+      left: 50%;
+      transform: translateX(-50%);
+      z-index: 1100;
+      /* Initially visible */
+      display: block;
+      opacity: 1;
+      transition: opacity 0.3s ease;
     }
-    .button-container button {
+    .try-button-fixed button {
       padding: 15px 30px;
       font-size: 1.2rem;
-      border: none;
+      border: 30px;
       border-radius: 5px;
       background-color: #ff5722;
       color: white;
       cursor: pointer;
       transition: background-color 0.3s ease;
-      animation: fadeIn 1s ease-out forwards;
-      animation-delay: 0.3s;
-      opacity: 0;
     }
-    .button-container button:hover {
+    .try-button-fixed button:hover {
       background-color: #e64a19;
     }
     
@@ -123,7 +129,7 @@
       max-width: 90%;
       border-radius: 10px;
       overflow: hidden;
-      box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+      box-shadow: 0 4px 8px rgba(0,0,0,0.1);
       animation: fadeIn 1s ease-out forwards;
       opacity: 0;
     }
@@ -184,7 +190,7 @@
       border: 1px solid #ddd;
       border-radius: 10px;
       overflow: hidden;
-      box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+      box-shadow: 0 4px 8px rgba(0,0,0,0.1);
       text-align: center;
       animation: fadeIn 1s ease-out forwards;
       opacity: 0;
@@ -301,7 +307,7 @@
       .hero-content .full-width {
         font-size: 2rem;
       }
-      .button-container button {
+      .try-button-fixed button {
         font-size: 1rem;
         padding: 10px 20px;
       }
@@ -333,18 +339,21 @@
     </div>
   </nav>
   
-  <!-- Hero Section with Responsive Background Image and Moving Content -->
+  <!-- Hero Section with Responsive Background Image -->
   <section id="hero" class="section hero">
     <div class="hero-image-container">
       <img src="static/meal_images/background.png" alt="Landing Background" class="hero-bg" loading="lazy">
       <div class="hero-content">
-        <!-- <h1 class="full-width">Welcome to SwipeEat</h1> -->
-        <div class="button-container container">
+        <!-- Optional headline can go here if desired -->
+        <div class="try-button-fixed">
           <button onclick="tryItOut()">Try it out</button>
         </div>
       </div>
     </div>
   </section>
+  
+  <!-- Fixed Try it Out Button (Visible only on the first page) -->
+
   
   <!-- Block 2: Swipe Images Section -->
   <section id="swipe" class="section swipe-section">
@@ -399,7 +408,7 @@
           As explorers of taste and pioneers of technology, we constantly chase extraordinary food experiences. One evening, amid endless menu scrolling, inspiration struck... What if choosing a meal was as intuitive as a heartbeat? From that moment, our innovative, SwipeEat platform was born, effortlessly guiding you to dishes you'll adore.
         </p>
       </div>
-      <!-- Updated Food Gallery: 2 small images, 1 big image, 2 small images -->
+      <!-- Food Gallery: 2 small images, 1 big image, 2 small images -->
       <div class="food-gallery">
         <div class="gallery-item">
           <img src="static/meal_images/food_gallery.jpeg" alt="Restaurant Visit 1" loading="lazy">
@@ -496,9 +505,12 @@
       }
     }, { passive: false });
     
-    // Back-to-Top Button Functionality and Parallax Effect
+    // Back-to-Top Button Functionality, Parallax Effect, and Try Button Visibility
     const backToTopButton = document.getElementById('backToTop');
+    const heroSection = document.getElementById('hero');
+    const tryButton = document.querySelector('.try-button-fixed');
     window.addEventListener('scroll', () => {
+      // Back-to-Top Button
       if (window.pageYOffset > 300) {
         backToTopButton.style.display = 'block';
         backToTopButton.style.opacity = '1';
@@ -509,10 +521,21 @@
         }, 300);
       }
       
-      // Update hero content position for a subtle parallax effect
+      // Parallax effect for hero content
       const offset = window.pageYOffset;
       document.querySelector('.hero-content').style.transform =
         "translate(-50%, calc(-50% + " + (offset * 0.2) + "px))";
+      
+      // Show fixed try button only when on the first (hero) page
+      if (offset < heroSection.offsetHeight) {
+        tryButton.style.display = 'block';
+        tryButton.style.opacity = '1';
+      } else {
+        tryButton.style.opacity = '0';
+        setTimeout(() => {
+          tryButton.style.display = 'none';
+        }, 300);
+      }
     });
   </script>
   
