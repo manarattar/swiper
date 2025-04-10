@@ -74,9 +74,10 @@
       transform: scale(1);
       transform-origin: center;
     }
+    /* Adjusted hero-content positioning: vertical coordinate set to 75% */
     .hero-content {
       position: absolute;
-      top: 70%;
+      top: 75%;
       left: 50%;
       transform: translate(-50%, -50%);
       text-align: center;
@@ -100,6 +101,7 @@
       border-radius: 5px;
       padding: 15px 30px;
       font-size: 1.2rem;
+      color: white; /* Button text in white */
       cursor: pointer;
       transition: background-color 0.3s ease;
       margin-top: 20px;
@@ -329,9 +331,9 @@
     <div class="hero-image-container">
       <img src="static/meal_images/Landing Welcome.png" alt="Landing Background" class="hero-bg" loading="lazy">
       <div class="hero-content">
-        <!-- New centered button in the hero section -->
+        <!-- New centered button placed at a vertical coordinate set to 75% of the hero section -->
         <button class="hero-button" onclick="window.location.href='https://swiper-2xu5.onrender.com/'">
-          Try it out
+          Click Here
         </button>
       </div>
     </div>
