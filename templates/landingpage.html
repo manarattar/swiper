@@ -71,7 +71,7 @@
       width: 100%;
       height: auto;
       display: block;
-      transform: scale(1);
+      transform: scale(1); /* No zoom */
       transform-origin: center;
     }
     .hero-content {
@@ -93,7 +93,7 @@
       animation: fadeIn 1s ease-out forwards;
     }
     
-    /* Fixed Try it Out Button - Always visible */
+    /* Fixed Try it Out Button - Only visible on the hero section and not moving */
     .try-button-fixed {
       position: fixed;
       bottom: 10%;
@@ -102,7 +102,7 @@
       z-index: 1100;
       display: block;
       opacity: 1;
-      transition: none;
+      transition: opacity 0.3s ease;
     }
     .try-button-fixed button {
       padding: 15px 30px;
@@ -343,15 +343,14 @@
     <div class="hero-image-container">
       <img src="static/meal_images/Landing Welcome.png" alt="Landing Background" class="hero-bg" loading="lazy">
       <div class="hero-content">
-        <!-- Optional headline can go here if desired -->
+        <!-- Optional headline goes here if desired -->
+      </div>
+      <!-- Try it Out Button: Visible only on the first (hero) page and not moved by parallax -->
+      <div class="try-button-fixed">
+        <button onclick="tryItOut()">Try it out</button>
       </div>
     </div>
   </section>
-  
-  <!-- Fixed Try it Out Button - Always visible -->
-  <div class="try-button-fixed">
-    <button onclick="tryItOut()">Try it out</button>
-  </div>
   
   <!-- Block 2: Swipe Images Section -->
   <section id="swipe" class="section swipe-section">
@@ -457,7 +456,7 @@
       
       // Ease-in-out quadratic
       function ease(t, b, c, d) {
-        t /= d/2;
+        t /= d / 2;
         if (t < 1) return c/2*t*t + b;
         t--;
         return -c/2 * (t*(t-2) - 1) + b;
@@ -504,9 +503,11 @@
       }
     }, { passive: false });
     
-    // Back-to-Top Button Functionality and Parallax Effect for Hero Content
-    const backToTopButton = document.getElementById('backToTop');
+    // Back-to-Top Button Functionality, Parallax Effect, and Try Button Visibility Control
     const heroSection = document.getElementById('hero');
+    const tryButton = document.querySelector('.try-button-fixed');
+    const backToTopButton = document.getElementById('backToTop');
+    
     window.addEventListener('scroll', () => {
       // Back-to-Top Button
       if (window.pageYOffset > 300) {
@@ -519,12 +520,21 @@
         }, 300);
       }
       
-      // Parallax effect for hero content
+      // Parallax effect for hero content (excluding the try button)
       const offset = window.pageYOffset;
       document.querySelector('.hero-content').style.transform =
         "translate(-50%, calc(-50% + " + (offset * 0.2) + "px))";
       
-      // Removed any logic for hiding or moving the try button.
+      // Show the try button only when within the hero section
+      if (offset < heroSection.offsetHeight) {
+        tryButton.style.display = 'block';
+        tryButton.style.opacity = '1';
+      } else {
+        tryButton.style.opacity = '0';
+        setTimeout(() => {
+          tryButton.style.display = 'none';
+        }, 300);
+      }
     });
   </script>
   
