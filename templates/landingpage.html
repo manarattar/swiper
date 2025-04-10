@@ -71,7 +71,7 @@
       width: 100%;
       height: auto;
       display: block;
-      transform: scale(1); /* No zoom */
+      transform: scale(1);
       transform-origin: center;
     }
     .hero-content {
@@ -91,31 +91,6 @@
       margin: 0;
       text-align: center;
       animation: fadeIn 1s ease-out forwards;
-    }
-    
-    /* Fixed Try it Out Button - Only visible on the hero section and not moving */
-    .try-button-fixed {
-      position: fixed;
-      bottom: 10%;
-      left: 50%;
-      transform: translateX(-50%);
-      z-index: 1100;
-      display: block;
-      opacity: 1;
-      transition: opacity 0.3s ease;
-    }
-    .try-button-fixed button {
-      padding: 15px 30px;
-      font-size: 1.2rem;
-      border: none;
-      border-radius: 5px;
-      background-color: transparent;
-      color: white;
-      cursor: pointer;
-      transition: background-color 0.3s ease;
-    }
-    .try-button-fixed button:hover {
-      background-color: #e64a19;
     }
     
     /* Block 2: Swipe Images Section with Fade-In Animation */
@@ -306,10 +281,6 @@
       .hero-content .full-width {
         font-size: 2rem;
       }
-      .try-button-fixed button {
-        font-size: 1rem;
-        padding: 10px 20px;
-      }
       .navbar ul {
         padding: 10px;
       }
@@ -344,10 +315,6 @@
       <img src="static/meal_images/Landing Welcome.png" alt="Landing Background" class="hero-bg" loading="lazy">
       <div class="hero-content">
         <!-- Optional headline goes here if desired -->
-      </div>
-      <!-- Try it Out Button: Visible only on the first (hero) page and not moved by parallax -->
-      <div class="try-button-fixed">
-        <button onclick="tryItOut()">Try it out</button>
       </div>
     </div>
   </section>
@@ -432,11 +399,6 @@
   <button id="backToTop" aria-label="Back to top" onclick="smoothScrollTo('#hero', 2000)">Top</button>
   
   <script>
-    function tryItOut() {
-      // Redirect or perform an action when the "Try it out" button is clicked.
-      window.location.href = "{{ url_for('welcome') }}"; // Replace with your desired destination URL.
-    }
-    
     // Custom Smooth Scroll Function with Duration Control
     function smoothScrollTo(targetSelector, duration) {
       const targetElement = document.querySelector(targetSelector);
@@ -503,13 +465,9 @@
       }
     }, { passive: false });
     
-    // Back-to-Top Button Functionality, Parallax Effect, and Try Button Visibility Control
-    const heroSection = document.getElementById('hero');
-    const tryButton = document.querySelector('.try-button-fixed');
+    // Back-to-Top Button Functionality
     const backToTopButton = document.getElementById('backToTop');
-    
     window.addEventListener('scroll', () => {
-      // Back-to-Top Button
       if (window.pageYOffset > 300) {
         backToTopButton.style.display = 'block';
         backToTopButton.style.opacity = '1';
@@ -517,22 +475,6 @@
         backToTopButton.style.opacity = '0';
         setTimeout(() => {
           backToTopButton.style.display = 'none';
-        }, 300);
-      }
-      
-      // Parallax effect for hero content (excluding the try button)
-      const offset = window.pageYOffset;
-      document.querySelector('.hero-content').style.transform =
-        "translate(-50%, calc(-50% + " + (offset * 0.2) + "px))";
-      
-      // Show the try button only when within the hero section
-      if (offset < heroSection.offsetHeight) {
-        tryButton.style.display = 'block';
-        tryButton.style.opacity = '1';
-      } else {
-        tryButton.style.opacity = '0';
-        setTimeout(() => {
-          tryButton.style.display = 'none';
         }, 300);
       }
     });
