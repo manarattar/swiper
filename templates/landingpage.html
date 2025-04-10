@@ -93,6 +93,21 @@
       animation: fadeIn 1s ease-out forwards;
     }
     
+    /* New Hero Button */
+    .hero-button {
+      background-color: rgba(255, 215, 0, 0.7); /* Semi-transparent gold */
+      border: none;
+      border-radius: 5px;
+      padding: 15px 30px;
+      font-size: 1.2rem;
+      cursor: pointer;
+      transition: background-color 0.3s ease;
+      margin-top: 20px;
+    }
+    .hero-button:hover {
+      background-color: rgba(255, 215, 0, 0.9); /* Slightly less transparent on hover */
+    }
+    
     /* Block 2: Swipe Images Section with Fade-In Animation */
     .swipe-section {
       background-color: #f5f5f5;
@@ -314,7 +329,10 @@
     <div class="hero-image-container">
       <img src="static/meal_images/Landing Welcome.png" alt="Landing Background" class="hero-bg" loading="lazy">
       <div class="hero-content">
-        <!-- Optional headline goes here if desired -->
+        <!-- New centered button in the hero section -->
+        <button class="hero-button" onclick="window.location.href='https://swiper-2xu5.onrender.com/'">
+          Try it out
+        </button>
       </div>
     </div>
   </section>
