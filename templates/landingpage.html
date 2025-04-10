@@ -1,4 +1,4 @@
-<!DOCTYPE html> 
+<!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8">
@@ -11,7 +11,7 @@
     html, body {
       margin: 0;
       padding: 0;
-      scroll-behavior: auto; /* We'll handle smooth scrolling manually */
+      scroll-behavior: auto;
       font-family: 'Montserrat', sans-serif;
       overflow-x: hidden;
       touch-action: manipulation;
@@ -65,13 +65,13 @@
     .hero-image-container {
       position: relative;
       width: 100%;
-      overflow: hidden;  /* Hide overflow from scaling */
+      overflow: hidden;
     }
     .hero-bg {
       width: 100%;
       height: auto;
       display: block;
-      transform: scale(1); /* No zoom */
+      transform: scale(1);
       transform-origin: center;
     }
     .hero-content {
@@ -93,17 +93,16 @@
       animation: fadeIn 1s ease-out forwards;
     }
     
-    /* Fixed Try it Out Button - Visible only on the first page */
+    /* Fixed Try it Out Button - Always visible */
     .try-button-fixed {
       position: fixed;
       bottom: 10%;
       left: 50%;
       transform: translateX(-50%);
       z-index: 1100;
-      /* Initially visible */
       display: block;
       opacity: 1;
-      transition: opacity 0.3s ease;
+      transition: none;
     }
     .try-button-fixed button {
       padding: 15px 30px;
@@ -111,7 +110,6 @@
       border: none;
       border-radius: 5px;
       background-color: transparent;
-      
       color: white;
       cursor: pointer;
       transition: background-color 0.3s ease;
@@ -246,7 +244,7 @@
     .gallery-item {
       position: relative;
       width: 100%;
-      aspect-ratio: 1; /* Square shape */
+      aspect-ratio: 1;
       overflow: hidden;
     }
     .gallery-item img {
@@ -343,18 +341,17 @@
   <!-- Hero Section with Responsive Background Image -->
   <section id="hero" class="section hero">
     <div class="hero-image-container">
-      <img src="static\meal_images\Landing Welcome.png" alt="Landing Background" class="hero-bg" loading="lazy">
+      <img src="static/meal_images/Landing Welcome.png" alt="Landing Background" class="hero-bg" loading="lazy">
       <div class="hero-content">
         <!-- Optional headline can go here if desired -->
-        <div class="try-button-fixed">
-          <button onclick="tryItOut()">Try it out</button>
-        </div>
       </div>
     </div>
   </section>
   
-  <!-- Fixed Try it Out Button (Visible only on the first page) -->
-
+  <!-- Fixed Try it Out Button - Always visible -->
+  <div class="try-button-fixed">
+    <button onclick="tryItOut()">Try it out</button>
+  </div>
   
   <!-- Block 2: Swipe Images Section -->
   <section id="swipe" class="section swipe-section">
@@ -474,7 +471,7 @@
       link.addEventListener('click', function(e) {
         e.preventDefault();
         const target = this.getAttribute('data-target');
-        smoothScrollTo(target, 2000); // 2000ms duration for a slow transition
+        smoothScrollTo(target, 2000);
       });
     });
     
@@ -486,7 +483,6 @@
         e.preventDefault();
         return;
       }
-      // Determine current section index based on scroll position
       let currentScroll = window.pageYOffset;
       let currentSectionIndex = 0;
       sections.forEach((section, index) => {
@@ -495,9 +491,9 @@
         }
       });
       let targetIndex = currentSectionIndex;
-      if (e.deltaY > 0) { // Scrolling down
+      if (e.deltaY > 0) {
         targetIndex = Math.min(currentSectionIndex + 1, sections.length - 1);
-      } else if (e.deltaY < 0) { // Scrolling up
+      } else if (e.deltaY < 0) {
         targetIndex = Math.max(currentSectionIndex - 1, 0);
       }
       if (targetIndex !== currentSectionIndex) {
@@ -508,10 +504,9 @@
       }
     }, { passive: false });
     
-    // Back-to-Top Button Functionality, Parallax Effect, and Try Button Visibility
+    // Back-to-Top Button Functionality and Parallax Effect for Hero Content
     const backToTopButton = document.getElementById('backToTop');
     const heroSection = document.getElementById('hero');
-    const tryButton = document.querySelector('.try-button-fixed');
     window.addEventListener('scroll', () => {
       // Back-to-Top Button
       if (window.pageYOffset > 300) {
@@ -529,16 +524,7 @@
       document.querySelector('.hero-content').style.transform =
         "translate(-50%, calc(-50% + " + (offset * 0.2) + "px))";
       
-      // Show fixed try button only when on the first (hero) page
-      if (offset < heroSection.offsetHeight) {
-        tryButton.style.display = 'block';
-        tryButton.style.opacity = '1';
-      } else {
-        tryButton.style.opacity = '0';
-        setTimeout(() => {
-          tryButton.style.display = 'none';
-        }, 300);
-      }
+      // Removed any logic for hiding or moving the try button.
     });
   </script>
   
