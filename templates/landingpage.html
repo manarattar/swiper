@@ -20,15 +20,24 @@
       width: 100%;
     }
     
-    /* Container for Centralized, Responsive Content */
+    /* Container for centralized, responsive content */
     .container {
       max-width: 1200px;
-      margin: 0 auto;
-      padding: 0 15px;
+      margin: 0 auto; /* centers the container */
+      padding: 0 auto;
       box-sizing: border-box;
+      text-align: center; /* Ensures text is centered by default */
     }
     
-    /* Navigation Menu - Semitransparent */
+    /* Additional rule to force centering in About and Story sections */
+    .about-section .container,
+    .story-section .container {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+    
+    /* Navigation Menu - Semitransparent, centered */
     .navbar {
       position: fixed;
       top: 0;
@@ -58,7 +67,7 @@
       color: #ff5722;
     }
     
-    /* Hero Section with Responsive Background Image and Moving Content */
+    /* Hero Section with Responsive Background Image and Centered Content */
     .hero {
       position: relative;
     }
@@ -74,7 +83,8 @@
       transform: scale(1);
       transform-origin: center;
     }
-    /* Adjusted hero-content positioning: vertical coordinate set to 75% */
+    /* Hero content is absolutely positioned, horizontally centered,
+       and moved to 75% vertically */
     .hero-content {
       position: absolute;
       top: 75%;
@@ -86,7 +96,6 @@
       transition: transform 0.1s ease-out;
       width: 100%;
     }
-    /* (Optional) Full-width headline if needed */
     .hero-content .full-width {
       width: 100vw;
       margin: 0;
@@ -96,21 +105,21 @@
     
     /* New Hero Button */
     .hero-button {
-      background-color: rgba(184, 147, 0, 0.7); /* Semi-transparent gold */
+      background-color: rgba(255, 215, 0, 0.7); /* Semi-transparent gold */
       border: none;
       border-radius: 5px;
       padding: 15px 30px;
       font-size: 1.2rem;
-      color: white; /* Button text in white */
+      color: white; /* White text */
       cursor: pointer;
       transition: background-color 0.3s ease;
       margin-top: 20px;
     }
     .hero-button:hover {
-      background-color: rgba(255, 215, 0, 0.9); /* Slightly less transparent on hover */
+      background-color: rgba(255, 215, 0, 0.9);
     }
     
-    /* Block 2: Swipe Images Section with Fade-In Animation */
+    /* Block 2: Swipe Images Section */
     .swipe-section {
       background-color: #f5f5f5;
       padding: 50px 0;
@@ -140,12 +149,11 @@
     
     /* Block 3: About Us Section with Vision, Mission, and Team */
     .about-section {
-      padding: 50px 20px;
+      padding: 50px 0px;
       background-color: #fff;
       color: #333;
     }
     .about-section h2 {
-      text-align: center;
       margin-bottom: 30px;
       font-size: 2.5rem;
       animation: fadeIn 1s ease-out forwards;
@@ -165,7 +173,6 @@
       margin: 0 0 20px;
     }
     .team-headline {
-      text-align: center;
       font-size: 2rem;
       margin: 20px 0;
       animation: fadeIn 1s ease-out forwards;
@@ -182,7 +189,6 @@
       border-radius: 10px;
       overflow: hidden;
       box-shadow: 0 4px 8px rgba(0,0,0,0.1);
-      text-align: center;
       animation: fadeIn 1s ease-out forwards;
       opacity: 0;
     }
@@ -203,12 +209,11 @@
     
     /* Block 4: Story Section with Food Gallery */
     .story-section {
-      padding: 50px 20px;
+      padding: 50px 0px;
       background-color: #fafafa;
       color: #333;
     }
     .story-section h2 {
-      text-align: center;
       margin-bottom: 20px;
       font-size: 2.5rem;
       animation: fadeIn 1s ease-out forwards;
@@ -217,19 +222,20 @@
       max-width: 800px;
       margin: 0 auto 40px;
       line-height: 1.6;
-      text-align: center;
       font-size: 1.1rem;
+      text-align: center;
       animation: fadeIn 1s ease-out forwards;
       animation-delay: 0.2s;
       opacity: 0;
     }
-    /* Food Gallery Layout Using Columns */
+    /* Food Gallery: Center the overall grid and its items */
     .food-gallery {
       display: grid;
       grid-template-columns: repeat(2, 1fr);
       gap: 10px;
+      justify-items: center;  /* Center each grid item */
+      justify-content: center; /* Center the grid as a whole */
     }
-    /* Big image spans both columns */
     .food-gallery .big {
       grid-column: 1 / -1;
     }
@@ -290,10 +296,11 @@
       }
       .food-gallery {
         grid-template-columns: repeat(2, 1fr);
+        justify-content: center;
       }
     }
     
-    /* Additional Adjustments for Mobile Phones */
+    /* Adjustments for Mobile Phones */
     @media (max-width: 480px) {
       .hero-content .full-width {
         font-size: 2rem;
@@ -308,7 +315,9 @@
         margin: 10px auto;
       }
       .about-section, .story-section {
-        padding: 30px 10px;
+        padding: 30px 0px;
+        margin: 20px auto;
+        max-width: 90%;
       }
     }
   </style>
@@ -331,9 +340,9 @@
     <div class="hero-image-container">
       <img src="static/meal_images/Landing Welcome.png" alt="Landing Background" class="hero-bg" loading="lazy">
       <div class="hero-content">
-        <!-- New centered button placed at a vertical coordinate set to 75% of the hero section -->
+        <!-- Centered button placed in the hero section -->
         <button class="hero-button" onclick="window.location.href='https://swiper-2xu5.onrender.com/'">
-          Try It Out!
+          Try it out!
         </button>
       </div>
     </div>
@@ -368,7 +377,6 @@
           Our mission is to equip restaurants with a smart, interactive platform that revolutionizes how their guests engage with menus. Through a playful swipe interface and intelligent, preference-based recommendations, we make choosing the perfect dish effortless, exciting, and uniquely tailored to individual tastes, enhancing satisfaction and making every restaurant experience memorable.
         </p>
       </div>
-      <!-- "The team" Headline -->
       <h3 class="team-headline">The team</h3>
       <div class="founders">
         <div class="founder-card">
@@ -394,7 +402,6 @@
           As explorers of taste and pioneers of technology, we constantly chase extraordinary food experiences. One evening, amid endless menu scrolling, inspiration struck... What if choosing a meal was as intuitive as a heartbeat? From that moment, our innovative, SwipeEat platform was born, effortlessly guiding you to dishes you'll adore.
         </p>
       </div>
-      <!-- Food Gallery: 2 small images, 1 big image, 2 small images -->
       <div class="food-gallery">
         <div class="gallery-item">
           <img src="static/meal_images/food_gallery.jpeg" alt="Restaurant Visit 1" loading="lazy">
@@ -436,12 +443,11 @@
         if (timeElapsed < duration) requestAnimationFrame(animation);
       }
       
-      // Ease-in-out quadratic
       function ease(t, b, c, d) {
         t /= d / 2;
-        if (t < 1) return c/2*t*t + b;
+        if (t < 1) return c / 2 * t * t + b;
         t--;
-        return -c/2 * (t*(t-2) - 1) + b;
+        return -c / 2 * (t * (t - 2) - 1) + b;
       }
       
       requestAnimationFrame(animation);
