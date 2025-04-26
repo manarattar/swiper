@@ -276,6 +276,24 @@
       to { opacity: 1; transform: translateY(0); }
     }
     
+    /* ----------  NEW: desktop layout for the swipe-image trio  ---------- */
+    @media (min-width: 769px) {
+
+    /* 1.  Make the container a horizontal flexbox */
+    .swipe-section .container{
+      display:flex;                 /* lay items out in a row            */
+      justify-content:center;       /* centre the whole group            */
+      gap:20px;                     /* uniform breathing-room between them*/
+    }
+
+    /* 2.  Re-size each frame so exactly three fit per row */
+    .swipe-image{
+      flex:0 1 calc(33.333% - 20px);/* one-third width minus the gap      */
+      margin:0;                     /* remove the vertical centring trick */
+      max-width:none;               /* lift the previous 90 % constraint  */
+    }
+    }
+
     /* Responsive Design for Tablets and Smaller Devices */
     @media (max-width: 768px) {
       .hero-content .full-width {
