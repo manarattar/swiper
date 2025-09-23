@@ -27,7 +27,10 @@ def welcome():
 def food_swipe():
     """Render the main swiping interface."""
     return render_template("index.html")
-
+@app.route("/menu")
+def food_swipe():
+    """Render the main swiping interface."""
+    return render_template("menu.html")
 @app.route("/meal-of-the-day")
 def meal_of_the_day():
     """
