@@ -77,15 +77,13 @@
     /* Grid */
     .grid {
       display: grid;
-      grid-template-columns: 1fr;
+      grid-template-columns: repeat(2, 1fr); /* Two meals per row by default */
       gap: 14px;
     }
-    @media (min-width: 520px) {
-      .grid { grid-template-columns: repeat(2, 1fr); }
-    }
     @media (min-width: 860px) {
-      .grid { grid-template-columns: repeat(3, 1fr); }
+      .grid { grid-template-columns: repeat(3, 1fr); } /* Three on wider screens */
     }
+
 
     /* Card */
     .card {
