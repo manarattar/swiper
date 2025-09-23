@@ -1,72 +1,398 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Digital Menu</title>
-  <!-- Use existing stylesheet if available -->
-  <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Restaurant Menu</title>
   <style>
-    /* Simple responsive grid for menu cards */
-    .menu-container {
+    :root{
+      --bg: #0f172a;           /* slate-900 */
+      --card: #111827;         /* gray-900 */
+      --muted: #94a3b8;        /* slate-400 */
+      --text: #e5e7eb;         /* gray-200 */
+      --accent: #22c55e;       /* green-500 */
+      --accent-600: #16a34a;   /* green-600 */
+      --ring: rgba(34,197,94,.45);
+      --radius: 18px;
+      --shadow: 0 10px 20px rgba(2, 6, 23, 0.45);
+    }
+
+    /* Base reset & typography */
+    * { box-sizing: border-box; }
+    html, body { height: 100%; }
+    body {
+      margin: 0;
+      font-family: system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, "Apple Color Emoji", "Segoe UI Emoji";
+      color: var(--text);
+      background: radial-gradient(1200px 800px at 20% -10%, #1f2937 0%, var(--bg) 50%);
+      line-height: 1.45;
+    }
+
+    /* Header */
+    .header {
+      position: sticky;
+      top: 0;
+      z-index: 10;
+      backdrop-filter: blur(8px);
+      background: linear-gradient(to right, rgba(15,23,42,.85), rgba(15,23,42,.6));
+      border-bottom: 1px solid rgba(148,163,184,.15);
+    }
+    .header-inner {
+      max-width: 1100px;
+      margin: 0 auto;
+      padding: 14px 16px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+    }
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-weight: 700;
+      letter-spacing: 0.3px;
+    }
+    .brand-badge {
+      width: 34px; height: 34px;
+      border-radius: 10px;
+      background: linear-gradient(135deg, var(--accent), #06b6d4);
+      display: grid; place-items: center;
+      color: white; font-size: 18px;
+      box-shadow: 0 6px 16px rgba(6,182,212,.25);
+    }
+    .subtle {
+      color: var(--muted);
+      font-weight: 500;
+      font-size: 0.95rem;
+    }
+
+    /* Content container */
+    .container {
+      max-width: 1100px;
+      margin: 18px auto 80px;
+      padding: 0 16px;
+    }
+
+    /* Grid */
+    .grid {
       display: grid;
-      gap: 1rem;
-      grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
-      padding: 1rem;
+      grid-template-columns: 1fr;
+      gap: 14px;
     }
-    .menu-card {
-      border: 1px solid #ddd;
-      border-radius: 8px;
-      padding: 1rem;
-      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-      background-color: #fff;
+    @media (min-width: 520px) {
+      .grid { grid-template-columns: repeat(2, 1fr); }
     }
-    .menu-card img {
-      width: 100%;
-      height: 160px;
+    @media (min-width: 860px) {
+      .grid { grid-template-columns: repeat(3, 1fr); }
+    }
+
+    /* Card */
+    .card {
+      background: linear-gradient(180deg, #0b1220, var(--card));
+      border: 1px solid rgba(148,163,184,.10);
+      border-radius: var(--radius);
+      overflow: hidden;
+      box-shadow: var(--shadow);
+      display: flex;
+      flex-direction: column;
+      transition: transform .12s ease, box-shadow .12s ease, border-color .12s ease;
+    }
+    .card:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 16px 28px rgba(2, 6, 23, 0.55);
+      border-color: rgba(148,163,184,.2);
+    }
+    .card-media {
+      position: relative;
+      aspect-ratio: 16/11;
+      overflow: hidden;
+      background: #0b1324;
+    }
+    .card-media img {
+      width: 100%; height: 100%;
       object-fit: cover;
-      border-radius: 4px;
+      display: block;
+      transition: transform .35s ease;
     }
-    .menu-card h3 {
-      margin: 0.5rem 0;
-      font-size: 1.2rem;
+    .card:hover .card-media img { transform: scale(1.03); }
+
+    .chip-row {
+      position: absolute;
+      bottom: 10px; left: 10px; right: 10px;
+      display: flex; gap: 8px; flex-wrap: wrap;
     }
-    .menu-card p {
-      font-size: 0.9rem;
-      color: #555;
+    .chip {
+      padding: 4px 9px;
+      border-radius: 999px;
+      font-size: 12px;
+      color: #e2e8f0;
+      background: rgba(2,6,23,.55);
+      border: 1px solid rgba(148,163,184,.2);
+      backdrop-filter: blur(6px);
+      white-space: nowrap;
     }
-    .order-form {
-      margin-top: 0.5rem;
+
+    .card-body {
+      padding: 12px 14px 14px;
+      display: grid;
+      gap: 8px;
+      flex: 1;
     }
-    .order-form button {
-      background-color: #ff5722;
-      color: #fff;
+    .title {
+      font-size: 1.05rem;
+      font-weight: 700;
+      letter-spacing: .2px;
+      display: flex; align-items: center; gap: 8px;
+    }
+    .desc {
+      color: var(--muted);
+      font-size: .92rem;
+      margin-top: 2px;
+    }
+
+    .actions {
+      margin-top: auto;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+    }
+
+    .order-btn {
+      appearance: none;
       border: none;
-      padding: 0.5rem 1rem;
-      border-radius: 4px;
+      border-radius: 12px;
+      padding: 10px 14px;
+      font-weight: 700;
+      background: var(--accent);
+      color: #052e16;
       cursor: pointer;
+      transition: transform .05s ease, box-shadow .15s ease, background .15s ease;
+      box-shadow: 0 6px 14px var(--ring);
     }
-    .order-form button:hover {
-      background-color: #e64a19;
+    .order-btn:hover { background: var(--accent-600); }
+    .order-btn:active { transform: translateY(1px) scale(.99); }
+
+    .ghost {
+      color: var(--muted);
+      font-size: .88rem;
+      padding: 8px 10px;
+      border-radius: 10px;
+      border: 1px dashed rgba(148,163,184,.25);
+    }
+
+    /* Utility: visually-hidden (for extra accessible text) */
+    .sr-only {
+      position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px;
+      overflow: hidden; clip: rect(0,0,0,0); white-space: nowrap; border: 0;
     }
   </style>
 </head>
 <body>
-  <h2 style="text-align:center; margin-top:1rem;">Our Menu</h2>
-  <div class="menu-container">
-    {% for meal in meals %}
-      <div class="menu-card">
-        <img src="{{ url_for('static', filename='meal_images/' + meal.img.split('/')[-1]) }}" alt="{{ meal.name }}">
-        <h3>{{ meal.name }}</h3>
-        <p>{{ meal.description }}</p>
-        <form class="order-form" action="{{ url_for('order', meal_index=loop.index0) }}" method="post">
-          <button type="submit">Order</button>
-        </form>
+  <header class="header" role="banner">
+    <div class="header-inner">
+      <div class="brand">
+        <div class="brand-badge" aria-hidden="true">🍽️</div>
+        <div>
+          <div>Today’s Menu</div>
+          <div class="subtle">Freshly prepared. Tap to order.</div>
+        </div>
       </div>
-    {% endfor %}
-    {% if meals|length == 0 %}
-      <p>No meals available.</p>
-    {% endif %}
-  </div>
+    </div>
+  </header>
+
+  <main id="app" class="container" role="main" aria-live="polite">
+    <section class="grid" id="mealGrid"></section>
+  </main>
+
+  <template id="mealCardTemplate">
+    <article class="card" role="article">
+      <div class="card-media">
+        <img alt="" loading="lazy" decoding="async" />
+        <div class="chip-row">
+          <span class="chip js-category"></span>
+          <span class="chip js-meat"></span>
+          <span class="chip js-taste"></span>
+          <span class="chip js-spicy"></span>
+        </div>
+      </div>
+      <div class="card-body">
+        <h2 class="title">
+          <span class="js-emoji" aria-hidden="true"></span>
+          <span class="js-name"></span>
+        </h2>
+        <p class="desc js-desc"></p>
+        <div class="actions">
+          <button class="order-btn js-order" type="button">
+            Order <span class="sr-only">this meal</span>
+          </button>
+          <div class="ghost js-badge" aria-hidden="true"></div>
+        </div>
+      </div>
+    </article>
+  </template>
+
+  <script>
+    // --- Data (as provided) ---
+    const MEALS = [
+      {
+        "name": "Currywurst",
+        "img": "static/meal_images/Currywurst.png",
+        "description": "German sausage served with a tangy curry ketchup sauce.",
+        "category": "German",
+        "meatKind": "Pork",
+        "taste": "Savory",
+        "spicy": false,
+        "emotion": "Adventurous",
+        "emoji": "🚀"
+      },
+      {
+        "name": "Fettuccine Alfredo",
+        "img": "static/meal_images/Fettuccine_Alfredo.png",
+        "description": "Creamy pasta dish made with butter, cream, and Parmesan cheese.",
+        "category": "Italian",
+        "meatKind": "Vegetarian",
+        "taste": "Savory",
+        "spicy": false,
+        "emotion": "Comforting",
+        "emoji": "🤗"
+      },
+      {
+        "name": "Samosas",
+        "img": "static/meal_images/Samosas.png",
+        "description": "Deep-fried pastries filled with spiced potatoes, peas, or meat.",
+        "category": "Indian",
+        "meatKind": "Vegetarian",
+        "taste": "Savory",
+        "spicy": true,
+        "emotion": "Adventurous",
+        "emoji": "🚀"
+      },
+      {
+        "name": "Pho Ga",
+        "img": "static/meal_images/Pho_Ga.png",
+        "description": "Vietnamese chicken noodle soup with aromatic herbs.",
+        "category": "Vietnamese",
+        "meatKind": "Chicken",
+        "taste": "Savory",
+        "spicy": false,
+        "emotion": "Comforting",
+        "emoji": "🤗"
+      },
+      {
+        "name": "Carbonara",
+        "img": "static/meal_images/Carbonara.png",
+        "description": "Italian pasta with eggs, cheese, pancetta, and black pepper.",
+        "category": "Italian",
+        "meatKind": "Pork",
+        "taste": "Savory",
+        "spicy": false,
+        "emotion": "Comforting",
+        "emoji": "🤗"
+      },
+      {
+        "name": "Gyros",
+        "img": "static/meal_images/Gyros.png",
+        "description": "Greek meat wrap with lamb or chicken, vegetables, and tzatziki.",
+        "category": "Greek",
+        "meatKind": "Lamb",
+        "taste": "Savory",
+        "spicy": false,
+        "emotion": "Adventurous",
+        "emoji": "🚀"
+      },
+      {
+        "name": "Couscous",
+        "img": "static/meal_images/Couscous.png",
+        "description": "North African steamed semolina grains served with vegetables or meat.",
+        "category": "North African",
+        "meatKind": "Varies",
+        "taste": "Savory",
+        "spicy": false,
+        "emotion": "Adventurous",
+        "emoji": "🚀"
+      },
+      {
+        "name": "Shrimp Tempura",
+        "img": "static/meal_images/Shrimp_Tempura.png",
+        "description": "Lightly battered and fried shrimp served with dipping sauce.",
+        "category": "Japanese",
+        "meatKind": "Shrimp",
+        "taste": "Savory",
+        "spicy": false,
+        "emotion": "Adventurous",
+        "emoji": "🚀"
+      },
+      {
+        "name": "Dolma",
+        "img": "static/meal_images/Dolma.png",
+        "description": "Grape leaves stuffed with rice and spices, sometimes with meat.",
+        "category": "Middle Eastern",
+        "meatKind": "Vegetarian",
+        "taste": "Savory",
+        "spicy": false,
+        "emotion": "Nostalgic",
+        "emoji": "💭"
+      },
+      {
+        "name": "Crab Cakes",
+        "img": "static/meal_images/Crab_Cakes.png",
+        "description": "Pan-fried patties made with lump crab meat and breadcrumbs.",
+        "category": "American",
+        "meatKind": "Seafood",
+        "taste": "Savory",
+        "spicy": false,
+        "emotion": "Nostalgic",
+        "emoji": "💭"
+      }
+    ];
+
+    // --- Rendering logic ---
+    const grid = document.getElementById('mealGrid');
+    const tpl = document.getElementById('mealCardTemplate');
+
+    function badgeText(meal) {
+      // A concise right-side badge (emotion + emoji).
+      return `${meal.emotion} ${meal.emoji}`;
+    }
+
+    function renderMeals(data) {
+      grid.innerHTML = '';
+      data.forEach(meal => {
+        const node = tpl.content.cloneNode(true);
+
+        const img = node.querySelector('img');
+        img.src = meal.img;
+        img.alt = `${meal.name} image`;
+
+        node.querySelector('.js-category').textContent = meal.category;
+        node.querySelector('.js-meat').textContent = meal.meatKind;
+        node.querySelector('.js-taste').textContent = meal.taste;
+        node.querySelector('.js-spicy').textContent = meal.spicy ? 'Spicy 🌶️' : 'Mild';
+
+        node.querySelector('.js-emoji').textContent = meal.emoji;
+        node.querySelector('.js-name').textContent = meal.name;
+        node.querySelector('.js-desc').textContent = meal.description;
+        node.querySelector('.js-badge').textContent = badgeText(meal);
+
+        const orderBtn = node.querySelector('.js-order');
+        orderBtn.setAttribute('aria-label', `Order ${meal.name}`);
+        orderBtn.addEventListener('click', () => handleOrder(meal));
+
+        grid.appendChild(node);
+      });
+    }
+
+    function handleOrder(meal) {
+      // Replace this with your real order flow (e.g., POST to backend or navigate)
+      const msg = `You selected: ${meal.name}\nCategory: ${meal.category}\nPreference: ${meal.emotion} ${meal.emoji}`;
+      alert(msg);
+      console.log('[Order]', meal);
+    }
+
+    // Initial paint
+    renderMeals(MEALS);
+  </script>
 </body>
 </html>
