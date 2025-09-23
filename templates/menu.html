@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Digital Menu</title>
+  <!-- Use existing stylesheet if available -->
+  <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
+  <style>
+    /* Simple responsive grid for menu cards */
+    .menu-container {
+      display: grid;
+      gap: 1rem;
+      grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+      padding: 1rem;
+    }
+    .menu-card {
+      border: 1px solid #ddd;
+      border-radius: 8px;
+      padding: 1rem;
+      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+      background-color: #fff;
+    }
+    .menu-card img {
+      width: 100%;
+      height: 160px;
+      object-fit: cover;
+      border-radius: 4px;
+    }
+    .menu-card h3 {
+      margin: 0.5rem 0;
+      font-size: 1.2rem;
+    }
+    .menu-card p {
+      font-size: 0.9rem;
+      color: #555;
+    }
+    .order-form {
+      margin-top: 0.5rem;
+    }
+    .order-form button {
+      background-color: #ff5722;
+      color: #fff;
+      border: none;
+      padding: 0.5rem 1rem;
+      border-radius: 4px;
+      cursor: pointer;
+    }
+    .order-form button:hover {
+      background-color: #e64a19;
+    }
+  </style>
+</head>
+<body>
+  <h2 style="text-align:center; margin-top:1rem;">Our Menu</h2>
+  <div class="menu-container">
+    {% for meal in meals %}
+      <div class="menu-card">
+        <img src="{{ url_for('static', filename='meal_images/' + meal.img.split('/')[-1]) }}" alt="{{ meal.name }}">
+        <h3>{{ meal.name }}</h3>
+        <p>{{ meal.description }}</p>
+        <form class="order-form" action="{{ url_for('order', meal_index=loop.index0) }}" method="post">
+          <button type="submit">Order</button>
+        </form>
+      </div>
+    {% endfor %}
+    {% if meals|length == 0 %}
+      <p>No meals available.</p>
+    {% endif %}
+  </div>
+</body>
+</html>
