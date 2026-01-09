@@ -32,6 +32,12 @@
       margin-top: 0;
       font-size: 1.8rem;
     }
+    .title-logo{
+    height: 100px;
+    width: auto;
+    display: block;
+    margin: 0 auto;
+   }
     .sample-card {
       position: relative;
       margin: 20px auto;
@@ -95,7 +101,14 @@
 <body>
 
 <div class="tutorial-container">
-  <h1 class="title">Welcome to SwipeEat</h1>
+  <h1 class="title">Welcome to</h1>
+  <header>
+        <img
+          class="title-logo"
+          src="{{ url_for('static', filename='logo.png') }}"
+          alt="SwipeEat logo"
+        >
+  </header>
   <p>Your smart assistant to choose the best meal that fits your preference.</p>
   <h3>How does it work?</h3>
 
