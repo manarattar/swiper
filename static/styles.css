@@ -1,242 +1,116 @@
-/* file: static/styles.css */
+<!-- file: templates/meal_of_the_day.html -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1.0" />
+  <title>Meal of the Day</title>
 
-/* Base styling */
-body {
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    height: 100vh;
-    margin: 0;
-    font-family: Arial, sans-serif;
-    background-color: #f0f0f0;
-}
+  <!-- Use the shared stylesheet (same as welcome page) -->
+  <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
 
-header {
-    text-align: center;
-    margin-bottom: 20px;
-    width: 100%;
-}
+  <!-- Minimal page-specific CSS: only to match the welcome page layout -->
+  <style>
+    /* Reuse the welcome page background/centering */
+    body.welcome-body{
+      /* fallback padding so content never touches edges */
+      padding: 16px;
+    }
 
-.title {
-    font-size: 3rem;
-    font-weight: bold;
-    color: #CC9900;
-    text-shadow: 2px 2px 5px rgba(0, 0, 0, 0.1);
-    margin: 0;
-}
-/* Container that defines the available logo area */
-.logo-container{
-  width: 230px;      /* adjust as you like */
-  height: 70px;      /* adjust as you like */
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  margin: 0 auto;    /* centers the container */
-}
+    /* Make this page container behave like .welcome-container */
+    .meal-of-the-day-container{
+      /* align with welcome-container sizing/feel */
+      background-color: rgba(255, 255, 255, 0.85);
+      padding: 40px;
+      border-radius: 8px;
+      max-width: 500px;
+      width: 80%;
+      text-align: center;
+      box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+      box-sizing: border-box;
+    }
 
-/* Image fills the container WITHOUT distortion */
-.title-logo{
-  width: 100%;
-  height: 100%;
-  object-fit: contain;   /* key line: keeps aspect ratio */
-  display: block;
-}
+    .meal-of-the-day-container h2{
+      margin: 0 0 18px;
+      font-size: 2.5rem;
+      font-weight: 600;
+      color: #333;
+    }
 
-/* Reusable hidden class for toggling visibility */
-.hidden {
-    display: none !important;
-}
+    .meal-of-the-day-container img{
+      width: 100%;
+      border-radius: 10px;
+      margin: 0 0 14px;
+      display: block;
+    }
 
-/* Invisible class for opacity-based hiding */
-.invisible {
-    opacity: 0;
-}
+    /* Improve readability: avoid stacking many big headings */
+    .motd-name{
+      margin: 10px 0 6px;
+      font-size: 1.3rem;
+      font-weight: 600;
+      color: #333;
+    }
 
-/* Main container for the swiping page */
-.container {
-    width: 80%; /* flexible for many screen sizes */
-    max-width: 600px;
-    transition: opacity 0.3s ease-in-out;
-}
+    .motd-desc{
+      margin: 0 0 14px;
+      font-size: 1.05rem;
+      color: #555;
+      line-height: 1.4;
+    }
 
-/* Card styling */
-.card {
-    background: white;
-    padding: 20px;
-    border-radius: 10px;
-    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
-    text-align: center;
-    transition: transform 0.5s ease, opacity 0.5s ease;
-}
+    .motd-details{
+      margin: 0;
+      padding: 0;
+      list-style: none;
+      text-align: left;
+      color: #555;
+      font-size: 1.02rem;
+      line-height: 1.5;
+    }
 
-.card.swipe-right {
-    transform: translateX(100%);
-    opacity: 0;
-}
+    .motd-details li{
+      padding: 6px 0;
+      border-top: 1px solid rgba(0,0,0,0.08);
+    }
 
-.card.swipe-left {
-    transform: translateX(-100%);
-    opacity: 0;
-}
+    .motd-details li:first-child{
+      border-top: none;
+    }
 
-.card img {
-    width: 100%;
-    border-radius: 10px;
-}
+    .motd-details strong{
+      color: #333;
+      font-weight: 600;
+    }
 
-/* Transition for the meal image */
-#meal-img {
-    transition: opacity 0.3s ease-in-out;
-    opacity: 1;
-}
+    /* Keep restart button styling consistent with your existing stylesheet */
+    .meal-of-the-day-container form{
+      margin-top: 20px;
+    }
+  </style>
+</head>
 
-.card h2 {
-    margin: 10px 0;
-}
+<!-- Use the welcome page body class so background matches exactly -->
+<body class="welcome-body">
+  <div class="meal-of-the-day-container">
+    <h2 class="app-title">Meal of the Day</h2>
 
-/* Like/Dislike button area */
-.actions {
-    margin-top: 20px;
-}
+    <img src="{{ meal.img }}" alt="{{ meal.name }} image">
 
-.meal-emotion {
-    font-style: italic;
-    margin-top: 5px;
-}
+    <div class="motd-name">{{ meal.emoji }} {{ meal.name }}</div>
+    <p class="motd-desc">{{ meal.description }}</p>
 
-.buttons {
-    display: flex;
-    justify-content: space-around;
-}
+    <ul class="motd-details" aria-label="Meal details">
+      <li><strong>Cuisine:</strong> {{ meal.category }}</li>
+      <li><strong>Meat kind:</strong> {{ meal.meatKind }}</li>
+      <li><strong>Taste:</strong> {{ meal.taste }}</li>
+      <li><strong>Emotion:</strong> {{ meal.emotion }} {{ meal.emoji }}</li>
+    </ul>
 
-.button {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    width: 50px;
-    height: 50px;
-    background-color: #f0f0f0;
-    border: 2px solid #dcdcdc;
-    border-radius: 50%;
-    cursor: pointer;
-    transition: transform 0.2s ease-in-out, background-color 0.3s ease-in-out;
-}
-
-.button:hover {
-    background-color: #e0e0e0;
-    transform: scale(1.1);
-}
-
-.button:focus {
-    outline: 3px solid #007bff;
-    outline-offset: 2px;
-}
-
-.button i {
-    font-size: 24px;
-    color: #007bff;
-}
-
-.button.like {
-    border-color: #28a745;
-}
-
-.button.like i {
-    color: #28a745;
-}
-
-.button.dislike {
-    border-color: #dc3545;
-}
-
-.button.dislike i {
-    color: #dc3545;
-}
-
-/* Meal of the Day page container */
-.meal-of-the-day-container {
-    display: flex;
-    flex-direction: column;
-    justify-content: center;  /* vertically center content */
-    align-items: center;      /* horizontally center content */
-    padding: 20px;
-    background: #fff8e1;
-    box-sizing: border-box;
-    width: 80%;
-    max-width: 600px;
-}
-
-.meal-of-the-day-container img {
-    width: 100%;
-    border-radius: 10px;
-    margin-bottom: 10px;
-}
-
-.meal-of-the-day-container button {
-    margin-top: 20px;
-    padding: 10px 20px;
-    background-color: #007bff;
-    color: #ffffff;
-    border: none;
-    border-radius: 5px;
-    cursor: pointer;
-}
-
-.meal-of-the-day-container button:hover {
-    background-color: #0056b3;
-}
-
-/* Google Font Poppins */
-body, h1, h2, p, a, button {
-    font-family: 'Poppins', Arial, sans-serif;
-}
-
-/* Welcome page styling */
-.welcome-body {
-    background: url("{{ url_for('static', filename='images/food_background.jpg') }}") no-repeat center center;
-    background-size: cover;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    height: 100vh;
-    margin: 0;
-}
-
-.welcome-container {
-    background-color: rgba(255, 255, 255, 0.85);
-    padding: 40px;
-    border-radius: 8px;
-    max-width: 500px;
-    text-align: center;
-    box-shadow: 0 4px 8px rgba(0,0,0,0.1);
-}
-
-.app-title {
-    font-size: 2.5rem;
-    font-weight: 600;
-    margin: 0 0 20px;
-    color: #333;
-}
-
-.welcome-message {
-    font-size: 1.1rem;
-    color: #555;
-    margin-bottom: 30px;
-    line-height: 1.4;
-}
-
-.start-button {
-    display: inline-block;
-    padding: 14px 28px;
-    background-color: #28a745;
-    color: #fff;
-    text-decoration: none;
-    font-weight: 600;
-    border-radius: 6px;
-    transition: background-color 0.3s ease, transform 0.2s ease;
-}
-
-.start-button:hover {
-    background-color: #218838;
-    transform: scale(1.05);
-}
+    <!-- Restart button: POSTs to /restart -->
+    <form action="{{ url_for('restart') }}" method="POST">
+      <button type="submit">Restart</button>
+    </form>
+  </div>
+</body>
+</html>
