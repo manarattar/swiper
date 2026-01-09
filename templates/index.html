@@ -12,8 +12,13 @@
   <div id="main-container" class="container hidden">
     <div id="card" class="card">
       <header>
-        <h1 class="title">SwipeEat</h1>
+        <img
+          class="title-logo"
+          src="{{ url_for('static', filename='logo.png') }}"
+          alt="SwipeEat logo"
+        >
       </header>
+
       <img id="meal-img" src="" alt="Meal Image">
       <h2 id="meal-name">Meal Name</h2>
       <p id="meal-description">Meal Description</p>
