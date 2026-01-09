@@ -24,11 +24,22 @@ header {
     text-shadow: 2px 2px 5px rgba(0, 0, 0, 0.1);
     margin: 0;
 }
+/* Container that defines the available logo area */
+.logo-container{
+  width: 230px;      /* adjust as you like */
+  height: 70px;      /* adjust as you like */
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0 auto;    /* centers the container */
+}
+
+/* Image fills the container WITHOUT distortion */
 .title-logo{
-  height: 100px;
-  width: auto;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;   /* key line: keeps aspect ratio */
   display: block;
-  margin: 0 auto;
 }
 
 /* Reusable hidden class for toggling visibility */
