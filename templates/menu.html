@@ -5,428 +5,135 @@
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Restaurant Menu</title>
   <style>
-    :root{
-      /* SwipeEat palette (from your brand board) */
-      --peach: #FFE8DA;
-      --taupe: #5F5143;
-      --espresso: #4F3525;
-      --olive: #686928;
-      --orange: #D17F2D;
-
-      /* App tokens mapped to the palette */
-      --bg: var(--peach);
-      --card: #FFF7F1;               /* light tint that stays within the peach family */
-      --muted: var(--taupe);
-      --text: var(--espresso);
-
-      --accent: var(--orange);
-      --accent-600: #B56A22;         /* deeper orange (harmonizes with #D17F2D) */
-      --ring: rgba(209,127,45,.32);
-
-      --radius: 18px;
-      --shadow: 0 10px 20px rgba(79,53,37,.16);
-      --stroke: rgba(95,81,67,.22);
-    }
-
-    /* Base reset & typography */
-    * { box-sizing: border-box; }
-    html, body { height: 100%; }
-    body {
-      margin: 0;
-      font-family: system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, "Apple Color Emoji", "Segoe UI Emoji";
-      color: var(--text);
-      background: radial-gradient(1200px 800px at 20% -10%, #FFF7F1 0%, var(--bg) 60%);
-      line-height: 1.45;
-    }
-
-    /* Header */
-    .header {
-      position: sticky;
-      top: 0;
-      z-index: 10;
-      backdrop-filter: blur(8px);
-      background: linear-gradient(to right, rgba(255,232,218,.92), rgba(255,232,218,.75));
-      border-bottom: 1px solid var(--stroke);
-    }
-    .header-inner {
-      max-width: 1100px;
-      margin: 0 auto;
-      padding: 14px 16px;
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      gap: 12px;
-    }
-    .brand {
-      display: flex;
-      align-items: center;
-      gap: 10px;
-      font-weight: 700;
-      letter-spacing: 0.3px;
-    }
-    .brand-badge {
-      width: 34px; height: 34px;
-      border-radius: 10px;
-      background: linear-gradient(135deg, var(--orange), var(--olive));
-      display: grid; place-items: center;
-      color: #FFF7F1;
-      font-size: 18px;
-      box-shadow: 0 6px 16px rgba(79,53,37,.18);
-    }
-    .subtle {
-      color: rgba(95,81,67,.85);
-      font-weight: 500;
-      font-size: 0.95rem;
-    }
-
-    /* Content container */
-    .container {
-      max-width: 1100px;
-      margin: 18px auto 80px;
-      padding: 0 16px;
-    }
-
-    /* Grid */
-    .grid {
-      display: grid;
-      grid-template-columns: repeat(2, 1fr); /* Two meals per row by default */
-      gap: 14px;
-    }
-    @media (min-width: 860px) {
-      .grid { grid-template-columns: repeat(3, 1fr); } /* Three on wider screens */
-    }
-
-    /* Card */
-    .card {
-      background: linear-gradient(180deg, var(--card), var(--bg));
-      border: 1px solid var(--stroke);
-      border-radius: var(--radius);
-      overflow: hidden;
-      box-shadow: var(--shadow);
-      display: flex;
-      flex-direction: column;
-      transition: transform .12s ease, box-shadow .12s ease, border-color .12s ease;
-    }
-    .card:hover {
-      transform: translateY(-2px);
-      box-shadow: 0 16px 28px rgba(79,53,37,.22);
-      border-color: rgba(95,81,67,.32);
-    }
-    .card-media {
-      position: relative;
-      aspect-ratio: 16/11;
-      overflow: hidden;
-      background: rgba(104,105,40,.22); /* olive wash */
-    }
-    .card-media img {
-      width: 100%; height: 100%;
-      object-fit: cover;
-      display: block;
-      transition: transform .35s ease;
-    }
-    .card:hover .card-media img { transform: scale(1.03); }
-
-    .chip-row {
-      position: absolute;
-      bottom: 10px; left: 10px; right: 10px;
-      display: flex; gap: 8px; flex-wrap: wrap;
-    }
-    .chip {
-      padding: 4px 9px;
-      border-radius: 999px;
-      font-size: 12px;
-      color: var(--peach);
-      background: rgba(79,53,37,.58);          /* espresso glass */
-      border: 1px solid rgba(255,232,218,.28); /* peach edge */
-      backdrop-filter: blur(6px);
-      white-space: nowrap;
-    }
-
-    .card-body {
-      padding: 12px 14px 14px;
-      display: grid;
-      gap: 8px;
-      flex: 1;
-    }
-    .title {
-      font-size: 1.05rem;
-      font-weight: 800;
-      letter-spacing: .2px;
-      display: flex; align-items: center; gap: 8px;
-      color: var(--espresso);
-    }
-    .desc {
-      color: rgba(95,81,67,.95);
-      font-size: .92rem;
-      margin-top: 2px;
-    }
-
-    .actions {
-      margin-top: auto;
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      gap: 10px;
-    }
-
-    .order-btn {
-      appearance: none;
-      border: none;
-      border-radius: 12px;
-      padding: 10px 14px;
-      font-weight: 800;
-      background: var(--accent);
-      color: #FFF7F1;
-      cursor: pointer;
-      transition: transform .05s ease, box-shadow .15s ease, background .15s ease;
-      box-shadow: 0 6px 14px var(--ring);
-    }
-    .order-btn:hover { background: var(--accent-600); }
-    .order-btn:active { transform: translateY(1px) scale(.99); }
-
-    .ghost {
-      color: rgba(95,81,67,.92);
-      font-size: .88rem;
-      padding: 8px 10px;
-      border-radius: 10px;
-      border: 1px dashed rgba(95,81,67,.35);
-      background: rgba(255,232,218,.55);
-    }
-    * Container that defines the available logo area */
-.logo-container{
-  width: 230px;      /* adjust as you like */
-  height: 70px;      /* adjust as you like */
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  margin: 0 auto;    /* centers the container */
-}
-
-/* Image fills the container WITHOUT distortion */
-.title-logo{
-  width: 100%;
-  height: 100%;
-  object-fit: contain;   /* key line: keeps aspect ratio */
-  display: block;
-}
-
-    /* Utility: visually-hidden (for extra accessible text) */
-    .sr-only {
-      position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px;
-      overflow: hidden; clip: rect(0,0,0,0); white-space: nowrap; border: 0;
-    }
+    :root{ --peach:#FFE8DA; --taupe:#5F5143; --espresso:#4F3525; --olive:#686928; --orange:#D17F2D; --card:#FFF7F1; --stroke:rgba(95,81,67,.22); --shadow:0 10px 20px rgba(79,53,37,.16); }
+    *{ box-sizing:border-box; }
+    body{ margin:0; font-family:system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial; color:var(--espresso); background:radial-gradient(1200px 800px at 20% -10%,var(--card) 0%,var(--peach) 60%); line-height:1.45; }
+    .header{ position:sticky; top:0; z-index:10; backdrop-filter:blur(8px); background:rgba(255,232,218,.94); border-bottom:1px solid var(--stroke); }
+    .header-inner,.container{ width:min(1120px,100%); margin:0 auto; padding:14px 16px; }
+    .header-inner{ display:flex; align-items:center; justify-content:space-between; gap:12px; }
+    .brand{ display:flex; align-items:center; gap:12px; font-weight:900; }
+    .brand-badge{ width:54px; height:54px; border-radius:14px; background:linear-gradient(135deg,var(--orange),var(--olive)); display:grid; place-items:center; box-shadow:0 6px 16px rgba(79,53,37,.18); }
+    .title-logo{ width:42px; height:42px; object-fit:contain; display:block; }
+    .subtle{ color:rgba(95,81,67,.85); font-weight:600; font-size:.92rem; }
+    .container{ margin:18px auto 90px; }
+    .toolbar{ display:grid; grid-template-columns:repeat(6,minmax(0,1fr)); gap:10px; padding:12px; margin-bottom:14px; background:rgba(255,247,241,.82); border:1px solid var(--stroke); border-radius:14px; box-shadow:0 6px 14px rgba(79,53,37,.08); }
+    label{ display:grid; gap:5px; font-weight:900; font-size:.86rem; }
+    input{ width:100%; border:1px solid rgba(95,81,67,.28); border-radius:10px; padding:9px 10px; font:inherit; color:var(--espresso); background:#fff; }
+    .check{ display:flex; align-items:center; gap:7px; padding-top:22px; }
+    .check input{ width:auto; }
+    .grid{ display:grid; grid-template-columns:repeat(2,1fr); gap:14px; }
+    @media (min-width:860px){ .grid{ grid-template-columns:repeat(3,1fr); } }
+    .card{ background:linear-gradient(180deg,var(--card),var(--peach)); border:1px solid var(--stroke); border-radius:14px; overflow:hidden; box-shadow:var(--shadow); display:flex; flex-direction:column; }
+    .card-media{ position:relative; aspect-ratio:16/11; overflow:hidden; background:rgba(104,105,40,.22); }
+    .card-media img{ width:100%; height:100%; object-fit:cover; display:block; }
+    .chip-row{ position:absolute; bottom:10px; left:10px; right:10px; display:flex; gap:8px; flex-wrap:wrap; }
+    .chip{ padding:4px 9px; border-radius:999px; font-size:12px; color:var(--peach); background:rgba(79,53,37,.58); border:1px solid rgba(255,232,218,.28); backdrop-filter:blur(6px); white-space:nowrap; }
+    .card-body{ padding:12px 14px 14px; display:grid; gap:8px; flex:1; }
+    .title{ margin:0; font-size:1.05rem; font-weight:900; display:flex; gap:8px; }
+    .desc{ color:rgba(95,81,67,.95); font-size:.92rem; margin:0; }
+    .actions{ margin-top:auto; display:flex; align-items:center; justify-content:space-between; gap:10px; }
+    .order-btn,.track-link{ border:none; border-radius:10px; padding:10px 12px; font:inherit; font-weight:900; background:var(--orange); color:#fff; cursor:pointer; text-decoration:none; }
+    .track-link{ display:inline-block; margin-top:8px; background:var(--olive); }
+    .ghost{ color:rgba(95,81,67,.92); font-size:.88rem; padding:8px 10px; border-radius:10px; border:1px dashed rgba(95,81,67,.35); background:rgba(255,232,218,.55); }
+    .status{ min-height:24px; margin:0 0 12px; font-weight:900; color:var(--olive); }
+    .status.error{ color:#dc3545; }
+    .payment-note{ font-size:.84rem; color:rgba(95,81,67,.86); }
+    @media (max-width:760px){ .toolbar,.grid{ grid-template-columns:1fr; } .header-inner{ align-items:flex-start; flex-direction:column; } .check{ padding-top:0; } .order-btn{ min-height:44px; } }
   </style>
 </head>
 <body>
   <header class="header" role="banner">
     <div class="header-inner">
       <div class="brand">
-        <div class="brand-badge" aria-hidden="true">
-        <div class="logo-container">
-            <img
-              class="title-logo"
-              src="{{ url_for('static', filename='logo_white.png') }}"
-              alt="SwipeEat logo"
-            >
-          </div>
-        </div>
-        <div>
-          <div>Today’s Menu</div>
-          <div class="subtle">Freshly prepared. Tap to order.</div>
-        </div>
+        <div class="brand-badge" aria-hidden="true"><img class="title-logo" src="{{ url_for('static', filename='logo_white.png') }}" alt=""></div>
+        <div><div>Today's Menu</div><div class="subtle">Freshly prepared. Tap to order.</div></div>
       </div>
+      <a class="track-link" href="{{ url_for('food_swipe') }}">Find My Match</a>
     </div>
   </header>
-
-  <main id="app" class="container" role="main" aria-live="polite">
-    <section class="grid" id="mealGrid"></section>
+  <main class="container" role="main">
+    <section class="toolbar" aria-label="Order and dietary filters">
+      <label>Table<input id="table-number" value="{{ table_number }}" autocomplete="off" placeholder="12"></label>
+      <label>Quantity<input id="quantity" type="number" min="1" value="1"></label>
+      <label>Notes<input id="notes" autocomplete="off" placeholder="No onions"></label>
+      <label>Allergens<input id="avoid-allergens" autocomplete="off" placeholder="nuts, dairy"></label>
+      <label class="check"><input id="vegetarian" type="checkbox"> Vegetarian</label>
+      <label class="check"><input id="halal" type="checkbox"> Halal</label>
+      <label class="check"><input id="mild" type="checkbox"> Mild only</label>
+      <label class="check"><input id="spicy" type="checkbox"> Spicy</label>
+    </section>
+    <div id="status" class="status" role="status"></div>
+    <section class="grid" id="mealGrid"></section><section style="margin-top:18px"><h2>My Orders</h2><div id="orderHistory" class="status"></div></section>
   </main>
-
   <template id="mealCardTemplate">
-    <article class="card" role="article">
-      <div class="card-media">
-        <img alt="" loading="lazy" decoding="async" />
-        <div class="chip-row">
-          <span class="chip js-category"></span>
-          <span class="chip js-meat"></span>
-          <span class="chip js-taste"></span>
-          <span class="chip js-spicy"></span>
-        </div>
-      </div>
-      <div class="card-body">
-        <h2 class="title">
-          <span class="js-emoji" aria-hidden="true"></span>
-          <span class="js-name"></span>
-        </h2>
-        <p class="desc js-desc"></p>
-        <div class="actions">
-          <button class="order-btn js-order" type="button">
-            Order <span class="sr-only">this meal</span>
-          </button>
-          <div class="ghost js-badge" aria-hidden="true"></div>
-        </div>
-      </div>
+    <article class="card">
+      <div class="card-media"><img alt="" loading="lazy" decoding="async"><div class="chip-row"><span class="chip js-category"></span><span class="chip js-meat"></span><span class="chip js-taste"></span><span class="chip js-stock"></span></div></div>
+      <div class="card-body"><h2 class="title"><span class="js-emoji"></span><span class="js-name"></span></h2><p class="desc js-desc"></p><div class="payment-note js-total"></div><div class="actions"><button class="order-btn js-order" type="button">Order</button><div class="ghost js-badge"></div></div></div>
     </article>
   </template>
-
   <script>
-    // --- Data (as provided) ---
-    const MEALS = [
-      {
-        "name": "Currywurst",
-        "img": "static/meal_images/Currywurst.png",
-        "description": "German sausage served with a tangy curry ketchup sauce.",
-        "category": "German",
-        "meatKind": "Pork",
-        "taste": "Savory",
-        "spicy": false,
-        "emotion": "Adventurous",
-        "emoji": "🚀"
-      },
-      {
-        "name": "Fettuccine Alfredo",
-        "img": "static/meal_images/Fettuccine_Alfredo.png",
-        "description": "Creamy pasta dish made with butter, cream, and Parmesan cheese.",
-        "category": "Italian",
-        "meatKind": "Vegetarian",
-        "taste": "Savory",
-        "spicy": false,
-        "emotion": "Comforting",
-        "emoji": "🤗"
-      },
-      {
-        "name": "Samosas",
-        "img": "static/meal_images/Samosas.png",
-        "description": "Deep-fried pastries filled with spiced potatoes, peas, or meat.",
-        "category": "Indian",
-        "meatKind": "Vegetarian",
-        "taste": "Savory",
-        "spicy": true,
-        "emotion": "Adventurous",
-        "emoji": "🚀"
-      },
-      {
-        "name": "Pho Ga",
-        "img": "static/meal_images/Pho_Ga.png",
-        "description": "Vietnamese chicken noodle soup with aromatic herbs.",
-        "category": "Vietnamese",
-        "meatKind": "Chicken",
-        "taste": "Savory",
-        "spicy": false,
-        "emotion": "Comforting",
-        "emoji": "🤗"
-      },
-      {
-        "name": "Carbonara",
-        "img": "static/meal_images/Carbonara.png",
-        "description": "Italian pasta with eggs, cheese, pancetta, and black pepper.",
-        "category": "Italian",
-        "meatKind": "Pork",
-        "taste": "Savory",
-        "spicy": false,
-        "emotion": "Comforting",
-        "emoji": "🤗"
-      },
-      {
-        "name": "Gyros",
-        "img": "static/meal_images/Gyros.png",
-        "description": "Greek meat wrap with lamb or chicken, vegetables, and tzatziki.",
-        "category": "Greek",
-        "meatKind": "Lamb",
-        "taste": "Savory",
-        "spicy": false,
-        "emotion": "Adventurous",
-        "emoji": "🚀"
-      },
-      {
-        "name": "Couscous",
-        "img": "static/meal_images/Couscous.png",
-        "description": "North African steamed semolina grains served with vegetables or meat.",
-        "category": "North African",
-        "meatKind": "Varies",
-        "taste": "Savory",
-        "spicy": false,
-        "emotion": "Adventurous",
-        "emoji": "🚀"
-      },
-      {
-        "name": "Shrimp Tempura",
-        "img": "static/meal_images/Shrimp_Tempura.png",
-        "description": "Lightly battered and fried shrimp served with dipping sauce.",
-        "category": "Japanese",
-        "meatKind": "Shrimp",
-        "taste": "Savory",
-        "spicy": false,
-        "emotion": "Adventurous",
-        "emoji": "🚀"
-      },
-      {
-        "name": "Dolma",
-        "img": "static/meal_images/Dolma.png",
-        "description": "Grape leaves stuffed with rice and spices, sometimes with meat.",
-        "category": "Middle Eastern",
-        "meatKind": "Vegetarian",
-        "taste": "Savory",
-        "spicy": false,
-        "emotion": "Nostalgic",
-        "emoji": "💭"
-      },
-      {
-        "name": "Crab Cakes",
-        "img": "static/meal_images/Crab_Cakes.png",
-        "description": "Pan-fried patties made with lump crab meat and breadcrumbs.",
-        "category": "American",
-        "meatKind": "Seafood",
-        "taste": "Savory",
-        "spicy": false,
-        "emotion": "Nostalgic",
-        "emoji": "💭"
-      }
-    ];
+    let meals = {{ meals|tojson }};
+    const grid = document.getElementById("mealGrid");
+    const tpl = document.getElementById("mealCardTemplate");
+    const statusEl = document.getElementById("status");
+    const quantityEl = document.getElementById("quantity");
+    const historyEl = document.getElementById("orderHistory");
 
-    // --- Rendering logic ---
-    const grid = document.getElementById('mealGrid');
-    const tpl = document.getElementById('mealCardTemplate');
-
-    function badgeText(meal) {
-      // A concise right-side badge (emotion + emoji).
-      return `${meal.emotion} ${meal.emoji}`;
-    }
-
-    function renderMeals(data) {
-      grid.innerHTML = '';
+    function priceNumber(price){ const match = String(price || "").match(/[0-9.]+/); return match ? Number(match[0]) : 0; }
+    function setStatus(message, isError=false){ statusEl.innerHTML = message; statusEl.classList.toggle("error", isError); }
+    function filters(){ return { vegetarian: vegetarian.checked, halal: halal.checked, mild: mild.checked, spicy: spicy.checked, avoidAllergens: document.getElementById("avoid-allergens").value }; }
+    function orderPayload(meal){ return { mealName: meal.name, quantity: Number(quantityEl.value || 1), tableNumber: document.getElementById("table-number").value, notes: document.getElementById("notes").value }; }
+    function renderMeals(data){
+      grid.innerHTML = "";
+      if (!data.length) { setStatus("No meals match those filters.", true); return; }
       data.forEach(meal => {
         const node = tpl.content.cloneNode(true);
-
-        const img = node.querySelector('img');
-        img.src = meal.img;
-        img.alt = `${meal.name} image`;
-
-        node.querySelector('.js-category').textContent = meal.category;
-        node.querySelector('.js-meat').textContent = meal.meatKind;
-        node.querySelector('.js-taste').textContent = meal.taste;
-        node.querySelector('.js-spicy').textContent = meal.spicy ? 'Spicy 🌶️' : 'Mild';
-
-        node.querySelector('.js-emoji').textContent = meal.emoji;
-        node.querySelector('.js-name').textContent = meal.name;
-        node.querySelector('.js-desc').textContent = meal.description;
-        node.querySelector('.js-badge').textContent = badgeText(meal);
-
-        const orderBtn = node.querySelector('.js-order');
-        orderBtn.setAttribute('aria-label', `Order ${meal.name}`);
-        orderBtn.addEventListener('click', () => handleOrder(meal));
-
+        const qty = Number(quantityEl.value || 1);
+        node.querySelector("img").src = meal.img;
+        node.querySelector("img").alt = `${meal.name} image`;
+        node.querySelector(".js-category").textContent = meal.category;
+        node.querySelector(".js-meat").textContent = meal.meatKind;
+        node.querySelector(".js-taste").textContent = meal.taste;
+        node.querySelector(".js-stock").textContent = meal.lowStock ? `Low stock: ${meal.stock}` : `Stock: ${meal.stock}`;
+        node.querySelector(".js-emoji").textContent = meal.emoji;
+        node.querySelector(".js-name").textContent = meal.name;
+        node.querySelector(".js-desc").textContent = meal.allergens && meal.allergens.length ? `${meal.description} Allergens: ${meal.allergens.join(", ")}.` : meal.description;
+        node.querySelector(".js-badge").textContent = meal.price ? `${meal.price} - ${meal.emotion}` : meal.emotion;
+        node.querySelector(".js-total").textContent = meal.price ? `Estimated total: $${(priceNumber(meal.price) * qty).toFixed(2)}. Payment ready: pay at counter.` : "Payment ready: pay at counter.";
+        const btn = node.querySelector(".js-order");
+        btn.disabled = meal.stock < qty;
+        btn.textContent = meal.stock < qty ? "Sold Out" : "Order";
+        btn.addEventListener("click", () => handleOrder(meal));
         grid.appendChild(node);
       });
     }
-
-    function handleOrder(meal) {
-      const msg = `You selected: ${meal.name}\nCategory: ${meal.category}\nPreference: ${meal.emotion} ${meal.emoji}`;
-      alert(msg);
-      console.log('[Order]', meal);
+    async function applyFilters(){
+      const response = await fetch("/dietary-filters", { method:"POST", headers:{"Content-Type":"application/json"}, body:JSON.stringify(filters()) });
+      const data = await response.json();
+      meals = data.meals || [];
+      setStatus("");
+      renderMeals(meals);
+    refreshHistory();
     }
-
-    renderMeals(MEALS);
+    async function refreshHistory(){
+      const response = await fetch("/orders/history");
+      if (!response.ok) return;
+      const data = await response.json();
+      historyEl.innerHTML = (data.orders || []).map(order => `<div><a class="track-link" href="${order.trackingUrl}">#${order.id} ${order.mealName}</a> ${order.status} - ${order.estimatedMinutes} min</div>`).join("") || "No orders yet.";
+    }
+    async function handleOrder(meal){
+      const response = await fetch("/orders", { method:"POST", headers:{"Content-Type":"application/json"}, body:JSON.stringify(orderPayload(meal)) });
+      const data = await response.json();
+      if (!response.ok) { setStatus(data.error || "Could not place order.", true); return; }
+      const order = data.order;
+      setStatus(`Order #${order.id} received: ${order.quantity} x ${order.mealName}. Total: $${Number(order.totalPrice || 0).toFixed(2)}. <a class="track-link" href="${order.trackingUrl}">Track order</a>`);
+      await applyFilters();
+      await refreshHistory();
+    }
+    document.querySelectorAll("#vegetarian,#halal,#mild,#spicy,#avoid-allergens").forEach(input => input.addEventListener("change", applyFilters));
+    quantityEl.addEventListener("change", () => renderMeals(meals));
+    renderMeals(meals);
+    refreshHistory();
   </script>
 </body>
 </html>

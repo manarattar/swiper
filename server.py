@@ -1,93 +1,426 @@
-# file: server.py
-from flask import Flask, render_template, request, jsonify, redirect, url_for, session
+import logging
+import os
+import secrets
+from functools import wraps
+
+from flask import Flask, Response, jsonify, redirect, render_template, request, session, url_for
 from backend import (
-    updateMeal,
+    addMeal,
+    addOrder,
+    authenticateAdmin,
+    deleteMealRecord,
+    ensureDefaultAdminUser,
+    exportMealsCsv,
+    exportOrdersCsv,
+    filteredMeals,
+    getAdminAnalytics,
+    getAdminUsers,
+    getAllMeals,
+    getInventorySummary,
+    getOrderByToken,
+    getOrders,
+    getProgress,
+    getSchemaMigrations,
+    goBackOneMeal,
     nextMeal,
     resetState,
-    goBackOneMeal
+    searchOrders,
+    setDietaryFilters,
+    updateMeal,
+    updateMealRecord,
+    updateOrderPaymentStatus,
+    updateOrderStatus,
 )
 
 app = Flask(__name__)
-app.secret_key = "your_secret_key_here"  # Replace with a secure random key in production
+app.secret_key = os.environ.get("SECRET_KEY", "dev-secret-key-change-me")
+app.config["SESSION_COOKIE_HTTPONLY"] = True
+app.config["SESSION_COOKIE_SAMESITE"] = "Lax"
+app.config["ADMIN_USERNAME"] = os.environ.get("ADMIN_USERNAME", "admin")
+app.config["ADMIN_PASSWORD"] = os.environ.get("ADMIN_PASSWORD", "admin")
+app.config["CSRF_ENABLED"] = os.environ.get("CSRF_ENABLED", "true").lower() != "false"
+logging.basicConfig(level=os.environ.get("LOG_LEVEL", "INFO"))
+logger = logging.getLogger(__name__)
 
-# -------------------------------------------
-# PAGE ROUTES
-# -------------------------------------------
+
+def is_admin_authenticated():
+    return session.get("admin_authenticated") is True
+
+
+def current_admin():
+    return session.get("admin_user") or {"username": "admin", "role": "admin"}
+
+
+def wants_json_response():
+    return request.path.startswith(("/admin/", "/orders", "/dietary-filters", "/handle_swipe", "/go_back", "/get_current_meal"))
+
+
+def csrf_token():
+    token = session.get("csrf_token")
+    if not token:
+        token = secrets.token_urlsafe(32)
+        session["csrf_token"] = token
+    return token
+
+
+def csrf_is_valid():
+    provided = request.headers.get("X-CSRF-Token") or request.form.get("_csrf")
+    return bool(provided and provided == session.get("csrf_token"))
+
+
+@app.context_processor
+def inject_security_helpers():
+    return {"csrf_token": csrf_token, "current_admin": current_admin}
+
+
+@app.before_request
+def protect_admin_mutations():
+    if app.config.get("TESTING") or not app.config.get("CSRF_ENABLED", True):
+        return None
+    if request.method not in {"POST", "PUT", "DELETE"}:
+        return None
+    if request.endpoint in {"admin_login"}:
+        return None
+    if request.path.startswith("/admin") and is_admin_authenticated() and not csrf_is_valid():
+        logger.warning("Blocked admin request without a valid CSRF token: %s %s", request.method, request.path)
+        return jsonify({"error": "Invalid CSRF token"}), 400
+    return None
+
+
+def admin_required(view):
+    @wraps(view)
+    def wrapped(*args, **kwargs):
+        if is_admin_authenticated():
+            return view(*args, **kwargs)
+        if request.path.startswith(("/admin/meals", "/admin/analytics", "/admin/orders", "/admin/inventory", "/admin/qr-codes", "/admin/export", "/admin/system", "/kitchen")):
+            return jsonify({"error": "Admin login required"}), 401
+        return redirect(url_for("admin_login", next=request.path))
+    return wrapped
+
+
+def safe_next_url(value):
+    value = value or url_for("admin")
+    if value.startswith("/") and not value.startswith("//"):
+        return value
+    return url_for("admin")
+
+
+def csv_response(filename, body):
+    return Response(
+        body,
+        mimetype="text/csv",
+        headers={"Content-Disposition": f"attachment; filename={filename}"},
+    )
+
+
 @app.route("/landingpage")
 def landing():
-    """Render the landing page."""
     return render_template("landingpage.html")
+
 
 @app.route("/")
 def welcome():
-    """Render the welcome page."""
     return render_template("welcome.html")
+
 
 @app.route("/food-swipe")
 def food_swipe():
-    """Render the main swiping interface."""
     return render_template("index.html")
+
+
 @app.route("/menu")
 def menu():
-    """Render the main swiping interface."""
-    return render_template("menu.html")
+    table = request.args.get("table", "")
+    return render_template("menu.html", meals=getAllMeals(include_unavailable=False), table_number=table)
+
+
+@app.route("/admin/login", methods=["GET", "POST"])
+def admin_login():
+    error = None
+    next_url = safe_next_url(request.args.get("next") or url_for("admin"))
+    ensureDefaultAdminUser(app.config["ADMIN_USERNAME"], app.config["ADMIN_PASSWORD"], "admin")
+    if request.method == "POST":
+        username = request.form.get("username", app.config["ADMIN_USERNAME"])
+        password = request.form.get("password", "")
+        next_url = safe_next_url(request.form.get("next") or url_for("admin"))
+        if session.get("admin_login_attempts", 0) >= 5:
+            error = "Too many login attempts. Restart your browser session."
+        else:
+            admin_user = authenticateAdmin(username, password, fallback_password=app.config["ADMIN_PASSWORD"])
+            if admin_user:
+                session["admin_authenticated"] = True
+                session["admin_user"] = admin_user
+                session.pop("admin_login_attempts", None)
+                csrf_token()
+                logger.info("Admin login succeeded for %s", admin_user["username"])
+                return redirect(next_url)
+            session["admin_login_attempts"] = session.get("admin_login_attempts", 0) + 1
+            error = "Invalid admin credentials"
+            logger.warning("Admin login failed for %s", username)
+    return render_template("admin_login.html", error=error, next_url=next_url, username=app.config["ADMIN_USERNAME"])
+
+
+@app.route("/admin/logout", methods=["POST"])
+def admin_logout():
+    session.pop("admin_authenticated", None)
+    session.pop("admin_user", None)
+    session.pop("csrf_token", None)
+    return redirect(url_for("admin_login"))
+
+
+@app.route("/admin")
+@admin_required
+def admin():
+    return render_template("admin.html", meals=getAllMeals())
+
+
 @app.route("/meal-of-the-day")
 def meal_of_the_day():
-    """
-    Render the final recommendation page (Meal of the Day).
-    Assumes the final recommendation (after all swipes) is computed
-    using the session-managed state.
-    """
     meal, _ = updateMeal()
     if not meal:
         return redirect(url_for("food_swipe"))
-    return render_template("meal_of_the_day.html", meal=meal)
+    recommendations = session.get("topRecommendations", [meal])
+    reasons = session.get("recommendationReasons", meal.get("reasons", []))
+    return render_template(
+        "meal_of_the_day.html",
+        meal=meal,
+        reasons=reasons,
+        recommendations=recommendations,
+    )
 
-# -------------------------------------------
-# AJAX ENDPOINTS
-# -------------------------------------------
+
 @app.route("/get_current_meal", methods=["GET"])
 def get_current_meal():
-    """
-    Returns JSON with the current meal and a flag indicating if it's the Meal of the Day.
-    Expected JSON format:
-       { "meal": { ... }, "isMealOfTheDay": true/false }
-    """
     meal, isMealOfTheDay = updateMeal()
     if not meal:
-        return jsonify({"meal": None, "isMealOfTheDay": False})
-    return jsonify({"meal": meal, "isMealOfTheDay": isMealOfTheDay})
+        return jsonify({"meal": None, "isMealOfTheDay": False, "progress": getProgress()})
+    return jsonify({"meal": meal, "isMealOfTheDay": isMealOfTheDay, "progress": getProgress()})
+
 
 @app.route("/handle_swipe", methods=["POST"])
 def handle_swipe():
-    """
-    Processes a user swipe (like/dislike) by calling nextMeal(liked)
-    and returns JSON with the new meal and a flag if it's the final recommendation.
-    """
-    data = request.get_json()
+    data = request.get_json() or {}
     liked = data.get("liked", False)
     newMeal, isMealOfTheDay = nextMeal(liked)
-    return jsonify({"meal": newMeal, "isMealOfTheDay": isMealOfTheDay})
+    return jsonify({"meal": newMeal, "isMealOfTheDay": isMealOfTheDay, "progress": getProgress()})
+
 
 @app.route("/go_back", methods=["POST"])
 def go_back():
-    """
-    Reverts the last swipe and returns the previous meal.
-    """
     meal, isMealOfTheDay = goBackOneMeal()
-    return jsonify({"meal": meal, "isMealOfTheDay": isMealOfTheDay})
+    return jsonify({"meal": meal, "isMealOfTheDay": isMealOfTheDay, "progress": getProgress()})
+
+
+@app.route("/admin/meals", methods=["GET"])
+@admin_required
+def admin_meals():
+    return jsonify({"meals": getAllMeals()})
+
+
+@app.route("/admin/meals", methods=["POST"])
+@admin_required
+def admin_add_meal():
+    try:
+        meal = addMeal(request.get_json() or {})
+    except ValueError as exc:
+        return jsonify({"error": str(exc)}), 400
+    logger.info("Admin %s added meal %s", current_admin()["username"], meal["name"])
+    return jsonify({"meal": meal}), 201
+
+
+@app.route("/admin/meals/<path:name>", methods=["PUT"])
+@admin_required
+def admin_update_meal(name):
+    try:
+        meal = updateMealRecord(name, request.get_json() or {})
+    except ValueError as exc:
+        return jsonify({"error": str(exc)}), 404
+    logger.info("Admin %s updated meal %s", current_admin()["username"], meal["name"])
+    return jsonify({"meal": meal})
+
+
+@app.route("/admin/meals/<path:name>", methods=["DELETE"])
+@admin_required
+def admin_delete_meal(name):
+    try:
+        meal = deleteMealRecord(name)
+    except ValueError as exc:
+        return jsonify({"error": str(exc)}), 404
+    logger.info("Admin %s deleted meal %s", current_admin()["username"], meal["name"])
+    return jsonify({"meal": meal})
+
+
+@app.route("/admin/analytics", methods=["GET"])
+@admin_required
+def admin_analytics():
+    return jsonify(getAdminAnalytics())
+
+
+@app.route("/admin/orders/<int:order_id>", methods=["PUT"])
+@admin_required
+def admin_update_order(order_id):
+    data = request.get_json() or {}
+    try:
+        order = updateOrderStatus(order_id, data.get("status"))
+    except ValueError as exc:
+        return jsonify({"error": str(exc)}), 400
+    logger.info("Admin %s marked order %s as %s", current_admin()["username"], order_id, order["status"])
+    return jsonify({"order": order})
+
+
+@app.route("/orders", methods=["POST"])
+def create_order():
+    data = request.get_json() or {}
+    meal_name = data.get("mealName", "")
+    try:
+        order = addOrder(
+            meal_name,
+            quantity=data.get("quantity", 1),
+            table_number=data.get("tableNumber", ""),
+            notes=data.get("notes", ""),
+        )
+    except ValueError as exc:
+        return jsonify({"error": str(exc)}), 400
+    history = session.get("orderHistory", [])
+    history.insert(0, order["trackingToken"])
+    session["orderHistory"] = history[:10]
+    logger.info("Order %s created for %s", order["id"], order["mealName"])
+    return jsonify({"order": order}), 201
+
+
+@app.route("/orders/history", methods=["GET"])
+def order_history():
+    tokens = session.get("orderHistory", [])
+    orders = [order for token in tokens if (order := getOrderByToken(token)) is not None]
+    return jsonify({"orders": orders})
+
+
+@app.route("/admin/orders/<int:order_id>/payment", methods=["PUT"])
+@admin_required
+def admin_update_order_payment(order_id):
+    data = request.get_json() or {}
+    try:
+        order = updateOrderPaymentStatus(order_id, data.get("paymentStatus"))
+    except ValueError as exc:
+        return jsonify({"error": str(exc)}), 400
+    logger.info("Admin %s marked order %s payment as %s", current_admin()["username"], order_id, order["paymentStatus"])
+    return jsonify({"order": order})
+
+
+@app.route("/admin/orders/search", methods=["GET"])
+@admin_required
+def admin_order_search():
+    try:
+        orders = searchOrders(request.args.get("q", ""), status=request.args.get("status") or None)
+    except ValueError as exc:
+        return jsonify({"error": str(exc)}), 400
+    return jsonify({"orders": orders})
+
+
+@app.route("/admin/inventory", methods=["GET"])
+@admin_required
+def admin_inventory():
+    return jsonify(getInventorySummary())
+
+
+@app.route("/admin/qr-codes", methods=["GET"])
+@admin_required
+def admin_qr_codes():
+    count = max(1, min(100, int(request.args.get("tables", 12))))
+    codes = [{"table": table, "url": url_for("qr_table", table=table, _external=False)} for table in range(1, count + 1)]
+    return jsonify({"codes": codes})
+
+
+@app.route("/admin/export/orders.csv", methods=["GET"])
+@admin_required
+def admin_export_orders():
+    return csv_response("swipeeat-orders.csv", exportOrdersCsv())
+
+
+@app.route("/admin/export/meals.csv", methods=["GET"])
+@admin_required
+def admin_export_meals():
+    return csv_response("swipeeat-meals.csv", exportMealsCsv())
+
+
+@app.route("/admin/system", methods=["GET"])
+@admin_required
+def admin_system_status():
+    return jsonify({"migrations": getSchemaMigrations(), "admins": getAdminUsers()})
+
+
+@app.route("/dietary-filters", methods=["POST"])
+def dietary_filters():
+    filters = setDietaryFilters(request.get_json() or {})
+    return jsonify({"filters": filters, "meals": filteredMeals(filters)})
+
+
+@app.route("/order/<token>")
+def order_tracking(token):
+    order = getOrderByToken(token)
+    if order is None:
+        return render_template("order_tracking.html", order=None), 404
+    return render_template("order_tracking.html", order=order)
+
+
+@app.route("/receipt/<token>")
+def receipt(token):
+    order = getOrderByToken(token)
+    if order is None:
+        return render_template("error.html", status_code=404, title="Receipt Not Found", message="This receipt link does not match an order."), 404
+    return render_template("receipt.html", order=order)
+
+
+@app.route("/orders/<token>", methods=["GET"])
+def order_status(token):
+    order = getOrderByToken(token)
+    if order is None:
+        return jsonify({"error": "Order not found"}), 404
+    return jsonify({"order": order})
+
+
+@app.route("/qr/<table>")
+def qr_table(table):
+    return redirect(url_for("menu", table=table))
+
+
+@app.route("/kitchen")
+@admin_required
+def kitchen():
+    return render_template("kitchen.html")
+
+
+@app.route("/admin/orders", methods=["GET"])
+@admin_required
+def admin_orders():
+    status = request.args.get("status") or None
+    try:
+        orders = getOrders(status=status)
+    except ValueError as exc:
+        return jsonify({"error": str(exc)}), 400
+    return jsonify({"orders": orders})
+
 
 @app.route("/restart", methods=["POST"])
 def restart():
-    """
-    Resets all user-specific state (preferences, current index, swipe history, and meal list)
-    and redirects the user to the welcome page.
-    """
     resetState()
     return redirect(url_for("welcome"))
 
-# -------------------------------------------
-# MAIN
-# -------------------------------------------
+
+@app.errorhandler(404)
+def not_found(error):
+    if wants_json_response():
+        return jsonify({"error": "Not found"}), 404
+    return render_template("error.html", status_code=404, title="Page Not Found", message="That page does not exist."), 404
+
+
+@app.errorhandler(500)
+def server_error(error):
+    logger.exception("Unhandled server error")
+    if wants_json_response():
+        return jsonify({"error": "Server error"}), 500
+    return render_template("error.html", status_code=500, title="Something Went Wrong", message="Please try again in a moment."), 500
+
+
 if __name__ == "__main__":
     app.run(debug=True)

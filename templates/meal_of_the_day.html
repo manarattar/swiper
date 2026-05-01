@@ -1,249 +1,226 @@
-<!-- file: templates/meal_of_the_day.html -->
 <!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width,initial-scale=1.0">
-
-  <title>Meal of the Day</title>
-
-  <!-- Inline styling copied from your Welcome/Tutorial page,
-       with only minimal additions for Meal-of-the-Day content. -->
+  <title>Meal Recommendations</title>
   <style>
     :root{
-      /* SwipeEat palette (from your brand board) */
       --peach: #FFE8DA;
       --taupe: #5F5143;
       --espresso: #4F3525;
       --olive: #686928;
       --orange: #D17F2D;
-
-      /* App tokens mapped to the palette (match menu file) */
-      --bg: var(--peach);
       --card: #FFF7F1;
-      --muted: var(--taupe);
-      --text: var(--espresso);
-
-      --accent: var(--orange);
-      --accent-600: #B56A22;
-      --ring: rgba(209,127,45,.32);
-
-      --radius: 18px;
-      --shadow: 0 10px 20px rgba(79,53,37,.16);
-      --shadow-strong: 0 16px 28px rgba(79,53,37,.22);
       --stroke: rgba(95,81,67,.22);
-
-      /* Preserve original action colors (as before) */
-      --primary-blue: #007bff;
-      --primary-blue-hover: #0056b3;
-      --go-back-gray: #6c757d;
-      --go-back-gray-hover: #5a6268;
+      --shadow: 0 10px 20px rgba(79,53,37,.16);
+      --blue: #007bff;
+      --blue-600: #0056b3;
     }
 
     *{ box-sizing: border-box; }
-    html, body{ height: 100%; }
-
     body{
       margin: 0;
-      font-family: system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, "Apple Color Emoji", "Segoe UI Emoji";
-      background: radial-gradient(1200px 800px at 20% -10%, var(--card) 0%, var(--bg) 60%);
-      color: var(--text);
-      display: flex;
-      justify-content: center;
-      align-items: center;
       min-height: 100vh;
-      line-height: 1.45;
-      padding: 16px;
-    }
-
-    .tutorial-container{
-      background: linear-gradient(180deg, var(--card), var(--bg));
-      padding: 22px;
-      width: 80%;
-      max-width: 520px;
-      border-radius: var(--radius);
-      border: 1px solid var(--stroke);
-      box-shadow: var(--shadow);
-      text-align: center;
-    }
-
-    .title{
-      margin-top: 0;
-      margin-bottom: 10px;
-      font-size: 1.9rem;
-      font-weight: 800;
-      color: var(--accent);
-      letter-spacing: .2px;
-      text-shadow: 2px 2px 6px rgba(79,53,37,.18);
-    }
-
-    .title-logo{
-      height: 100px;
-      width: auto;
-      display: block;
-      margin: 0 auto 6px;
-      object-fit: contain;
-    }
-
-    .tutorial-container p{
-      margin: 8px 0 14px;
-      color: rgba(95,81,67,.95);
-    }
-
-    /* Meal card (reusing the sample-card visual language) */
-    .sample-card{
-      position: relative;
-      margin: 16px auto;
-      width: 86%;
-      padding: 14px;
-      border: 1px dashed rgba(95,81,67,.35);
-      background: rgba(255,232,218,.55);
-      border-radius: 14px;
-      box-shadow: 0 6px 14px rgba(79,53,37,.10);
-    }
-
-    .sample-card img{
-      display: block;
-      margin: 0 auto 10px;
-      width: 100%;
-      height: auto;
-      object-fit: cover;
-      border-radius: 12px;
-    }
-
-    .sample-card h4{
-      margin: 8px 0 4px;
+      font-family: system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, "Apple Color Emoji", "Segoe UI Emoji";
       color: var(--espresso);
-      font-weight: 800;
-      letter-spacing: .2px;
-      font-size: 1.15rem;
+      background: radial-gradient(1200px 800px at 20% -10%, var(--card) 0%, var(--peach) 60%);
+      padding: 22px 16px 34px;
     }
 
-    .sample-card p{
-      margin: 0;
-      color: rgba(95,81,67,.95);
-      font-size: .95rem;
-      line-height: 1.45;
-    }
+    .page{ width: min(980px, 100%); margin: 0 auto; }
+    header{ text-align: center; margin-bottom: 18px; }
+    .title-logo{ height: 92px; width: auto; object-fit: contain; display: block; margin: 0 auto 4px; }
+    h1{ margin: 0; color: var(--orange); font-size: clamp(1.7rem, 3vw, 2.35rem); letter-spacing: 0; }
+    .subtitle{ margin: 8px auto 0; max-width: 620px; color: rgba(95,81,67,.95); }
 
-    /* Details block styled like the step-message */
-    .step-message{
-      margin-top: 10px;
-      color: rgba(79,53,37,.95);
-      background: rgba(255,247,241,.75);
-      border: 1px solid var(--stroke);
-      border-radius: 12px;
-      padding: 12px 12px;
-      box-shadow: 0 6px 14px rgba(79,53,37,.08);
-      text-align: left;
-    }
-
-    .detail-list{
-      margin: 0;
-      padding: 0;
-      list-style: none;
+    .hero-card{
       display: grid;
-      gap: 8px;
+      grid-template-columns: minmax(0, 1.05fr) minmax(280px, .95fr);
+      gap: 18px;
+      align-items: stretch;
+      background: linear-gradient(180deg, var(--card), var(--peach));
+      border: 1px solid var(--stroke);
+      border-radius: 18px;
+      box-shadow: var(--shadow);
+      padding: 16px;
+      margin-bottom: 18px;
     }
 
-    .detail-list li{
-      display: flex;
-      justify-content: space-between;
-      gap: 12px;
-      padding-bottom: 8px;
-      border-bottom: 1px solid rgba(95,81,67,.18);
-    }
+    .hero-card img,
+    .result-card img{ width: 100%; height: 100%; min-height: 260px; object-fit: cover; border-radius: 14px; display: block; }
+    .hero-body{ display: flex; flex-direction: column; justify-content: center; gap: 12px; }
+    .rank-badge{ display: inline-flex; align-items: center; width: fit-content; padding: 6px 10px; border-radius: 999px; background: rgba(104,105,40,.14); color: var(--olive); font-weight: 900; font-size: .85rem; }
+    h2, h3{ margin: 0; letter-spacing: 0; }
+    .description{ margin: 0; color: rgba(95,81,67,.95); line-height: 1.5; }
 
-    .detail-list li:last-child{
-      padding-bottom: 0;
-      border-bottom: none;
-    }
+    .detail-list{ margin: 0; padding: 0; list-style: none; display: grid; gap: 8px; }
+    .detail-list li{ display: flex; justify-content: space-between; gap: 14px; padding-bottom: 8px; border-bottom: 1px solid rgba(95,81,67,.18); }
+    .detail-list li:last-child{ border-bottom: none; }
+    .detail-label{ font-weight: 900; }
+    .detail-value{ color: rgba(95,81,67,.95); font-weight: 700; text-align: right; }
 
-    .detail-label{
-      font-weight: 800;
-      color: var(--espresso);
-      white-space: nowrap;
-    }
+    .reason-list{ display: flex; flex-wrap: wrap; gap: 8px; margin: 0; padding: 0; list-style: none; }
+    .reason-list li{ padding: 6px 9px; border-radius: 999px; border: 1px solid rgba(95,81,67,.22); background: rgba(255,247,241,.76); font-size: .9rem; color: rgba(79,53,37,.95); }
 
-    .detail-value{
-      color: rgba(95,81,67,.95);
-      font-weight: 700;
-      text-align: right;
+    .order-panel{
+      display: grid;
+      grid-template-columns: .7fr .6fr 1fr;
+      gap: 10px;
+      margin-bottom: 16px;
+      padding: 14px;
+      background: rgba(255,247,241,.82);
+      border: 1px solid var(--stroke);
+      border-radius: 14px;
+      box-shadow: 0 6px 14px rgba(79,53,37,.08);
     }
+    label{ display: grid; gap: 5px; font-weight: 900; font-size: .9rem; }
+    input{ width: 100%; border: 1px solid rgba(95,81,67,.28); border-radius: 10px; padding: 9px 10px; font: inherit; color: var(--espresso); background: #fff; }
+    .order-status{ grid-column: 1 / -1; min-height: 22px; font-weight: 900; color: var(--olive); }
+    .order-status.error{ color: #dc3545; }
 
-    /* Buttons (preserve original colors) */
-    .button{
-      display: inline-block;
-      padding: 10px 18px;
-      margin: 10px 6px 0;
-      color: #fff;
-      background-color: var(--primary-blue);
-      text-decoration: none;
-      border-radius: 4px;
-      cursor: pointer;
-      border: none;
-      box-shadow: 0 6px 14px rgba(0,123,255,.22);
-      transition: transform .05s ease, background-color .15s ease, box-shadow .15s ease;
-      font: inherit;
-    }
+    .results-grid{ display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; margin-top: 14px; }
+    .result-card{ display: grid; grid-template-columns: 140px minmax(0, 1fr); gap: 12px; background: rgba(255,247,241,.78); border: 1px solid var(--stroke); border-radius: 16px; padding: 12px; box-shadow: 0 6px 14px rgba(79,53,37,.08); }
+    .result-card img{ min-height: 128px; aspect-ratio: 1; }
+    .result-card p{ margin: 6px 0 0; color: rgba(95,81,67,.95); font-size: .92rem; }
+    .card-actions{ margin-top: 10px; }
 
-    .button:hover{
-      background-color: var(--primary-blue-hover);
-    }
+    .actions{ display: flex; justify-content: center; margin-top: 18px; }
+    .button{ display: inline-block; padding: 10px 18px; color: #fff; background-color: var(--blue); text-decoration: none; border-radius: 6px; cursor: pointer; border: none; box-shadow: 0 6px 14px rgba(0,123,255,.22); font: inherit; font-weight: 800; }
+    .button:hover{ background-color: var(--blue-600); }
+    .button.order-button{ width: fit-content; background: var(--orange); box-shadow: 0 6px 14px rgba(209,127,45,.22); }
+    .button.order-button:hover{ background: #ad6420; }
+    .button:disabled{ opacity: .68; cursor: wait; }
 
-    .button:active{
-      transform: translateY(1px) scale(.99);
+    @media (max-width: 760px){
+      .hero-card,
+      .result-card,
+      .order-panel{ grid-template-columns: 1fr; }
+      .results-grid{ grid-template-columns: 1fr; }
+      .hero-card img,
+      .result-card img{ min-height: 210px; }
     }
   </style>
 </head>
-
 <body>
-  <div class="tutorial-container">
-    <h1 class="title">Meal of the Day</h1>
-
+  <main class="page">
     <header>
-      <img
-        class="title-logo"
-        src="{{ url_for('static', filename='logo.png') }}"
-        alt="SwipeEat logo"
-      >
+      <img class="title-logo" src="{{ url_for('static', filename='logo.png') }}" alt="SwipeEat logo">
+      <h1>Your Top Matches</h1>
+      <p class="subtitle">Based on your swipes, this is the strongest match plus a couple of good alternatives.</p>
     </header>
 
-    <p>Here is today’s recommended meal based on your preferences.</p>
+    <section class="order-panel" aria-label="Order details">
+      <label>Table<input id="table-number" autocomplete="off" placeholder="12"></label>
+      <label>Quantity<input id="order-quantity" type="number" min="1" value="1"></label>
+      <label>Notes<input id="order-notes" autocomplete="off" placeholder="No onions, extra sauce"></label>
+      <div id="order-status" class="order-status" role="status"></div>
+    </section>
 
-    <!-- Meal card -->
-    <div class="sample-card">
+    <section class="hero-card" aria-label="Best meal recommendation">
       <img src="{{ meal.img }}" alt="{{ meal.name }} image">
-      <h4>{{ meal.emoji }} {{ meal.name }}</h4>
-      <p>{{ meal.description }}</p>
-    </div>
+      <div class="hero-body">
+        <span class="rank-badge">Best match</span>
+        <h2>{{ meal.emoji }} {{ meal.name }}</h2>
+        <p class="description">{{ meal.description }}</p>
+        <ul class="detail-list">
+          <li><span class="detail-label">Cuisine</span><span class="detail-value">{{ meal.category }}</span></li>
+          <li><span class="detail-label">Meat kind</span><span class="detail-value">{{ meal.meatKind }}</span></li>
+          <li><span class="detail-label">Taste</span><span class="detail-value">{{ meal.taste }}</span></li>
+          <li><span class="detail-label">Mood</span><span class="detail-value">{{ meal.emotion }} {{ meal.emoji }}</span></li>
+          {% if meal.price %}<li><span class="detail-label">Price</span><span class="detail-value">{{ meal.price }}</span></li>{% endif %}
+          {% if meal.allergens %}<li><span class="detail-label">Allergens</span><span class="detail-value">{{ meal.allergens|join(", ") }}</span></li>{% endif %}
+        </ul>
+        {% if reasons %}
+        <ul class="reason-list" aria-label="Recommendation reasons">
+          {% for reason in reasons %}
+          <li>{{ reason }}</li>
+          {% endfor %}
+        </ul>
+        {% endif %}
+        <button class="button order-button" type="button" data-order-meal="{{ meal.name }}">Order Best Match</button>
+      </div>
+    </section>
 
-    <!-- Details -->
-    <div class="step-message" aria-label="Meal details">
-      <ul class="detail-list">
-        <li>
-          <span class="detail-label">Cuisine</span>
-          <span class="detail-value">{{ meal.category }}</span>
-        </li>
-        <li>
-          <span class="detail-label">Meat kind</span>
-          <span class="detail-value">{{ meal.meatKind }}</span>
-        </li>
-        <li>
-          <span class="detail-label">Taste</span>
-          <span class="detail-value">{{ meal.taste }}</span>
-        </li>
-        <li>
-          <span class="detail-label">Emotion</span>
-          <span class="detail-value">{{ meal.emotion }} {{ meal.emoji }}</span>
-        </li>
-      </ul>
-    </div>
+    {% if recommendations|length > 1 %}
+    <section aria-label="Alternative recommendations">
+      <div class="results-grid">
+        {% for recommendation in recommendations[1:] %}
+        <article class="result-card">
+          <img src="{{ recommendation.img }}" alt="{{ recommendation.name }} image">
+          <div>
+            <span class="rank-badge">#{{ recommendation.rank }}</span>
+            <h3>{{ recommendation.emoji }} {{ recommendation.name }}</h3>
+            <p>{{ recommendation.description }}</p>
+            {% if recommendation.price %}<p><strong>{{ recommendation.price }}</strong></p>{% endif %}
+            {% if recommendation.reasons %}
+            <ul class="reason-list" aria-label="Why {{ recommendation.name }} matched">
+              {% for reason in recommendation.reasons[:2] %}
+              <li>{{ reason }}</li>
+              {% endfor %}
+            </ul>
+            {% endif %}
+            <div class="card-actions">
+              <button class="button order-button" type="button" data-order-meal="{{ recommendation.name }}">Order This Match</button>
+            </div>
+          </div>
+        </article>
+        {% endfor %}
+      </div>
+    </section>
+    {% endif %}
 
-    <!-- Restart button: POSTs to /restart -->
-    <form action="{{ url_for('restart') }}" method="POST">
-      <button class="button" type="submit">Restart</button>
-    </form>
-  </div>
+    <div class="actions">
+      <form action="{{ url_for('restart') }}" method="POST">
+        <button class="button" type="submit">Start Over</button>
+      </form>
+    </div>
+  </main>
+
+  <script>
+    const statusEl = document.getElementById("order-status");
+
+    function setOrderStatus(message, isError = false){
+      statusEl.textContent = message;
+      statusEl.classList.toggle("error", isError);
+    }
+
+    function orderPayload(mealName){
+      return {
+        mealName,
+        quantity: Number(document.getElementById("order-quantity").value || 1),
+        tableNumber: document.getElementById("table-number").value,
+        notes: document.getElementById("order-notes").value,
+      };
+    }
+
+    async function orderMeal(button){
+      const mealName = button.dataset.orderMeal;
+      button.disabled = true;
+      setOrderStatus(`Sending ${mealName} order...`);
+      try {
+        const response = await fetch("/orders", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(orderPayload(mealName)),
+        });
+        const data = await response.json();
+        if (!response.ok) {
+          setOrderStatus(data.error || "Could not place order", true);
+          return;
+        }
+        const order = data.order;
+        setOrderStatus(`Order #${order.id} received: ${order.quantity} x ${order.mealName}. Total: $${Number(order.totalPrice || 0).toFixed(2)}. Track it at ${order.trackingUrl}`);
+      } catch (error) {
+        setOrderStatus("Could not place order", true);
+      } finally {
+        button.disabled = false;
+      }
+    }
+
+    document.querySelectorAll("[data-order-meal]").forEach(button => {
+      button.addEventListener("click", () => orderMeal(button));
+    });
+  </script>
 </body>
 </html>

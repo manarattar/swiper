@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8">
@@ -8,9 +8,19 @@
   <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css" rel="stylesheet">
 </head>
 <body>
-  <!-- Main container starts hidden; it will fade in via JS once content is ready -->
   <div id="main-container" class="container hidden">
+    <div class="progress-panel" aria-label="Swipe progress">
+      <div class="progress-copy">
+        <span id="progress-label">Meal 1 of 10</span>
+        <span id="progress-remaining">9 left</span>
+      </div>
+      <div class="progress-track" aria-hidden="true">
+        <div id="progress-bar" class="progress-bar"></div>
+      </div>
+    </div>
+
     <div id="card" class="card">
+      <div id="swipe-choice" class="swipe-choice" aria-hidden="true"></div>
       <header>
          <div class="logo-container">
             <img
@@ -21,21 +31,22 @@
           </div>
       </header>
 
-      <img id="meal-img" src="" alt="Meal Image">
+      <img id="meal-img" src="" alt="Meal Image" draggable="false">
       <h2 id="meal-name">Meal Name</h2>
       <p id="meal-description">Meal Description</p>
       <p id="meal-emotion" class="meal-emotion"></p>
+      <div class="swipe-hint">Drag the card, use arrow keys, or tap a button.</div>
       <div class="actions">
         <div class="buttons">
-          <div id="dislike-button" class="button dislike">
+          <button id="dislike-button" class="button dislike" type="button" aria-label="Dislike meal">
             <i class="fas fa-thumbs-down"></i>
-          </div>
-          <div id="go-back-button" class="button go-back">
+          </button>
+          <button id="go-back-button" class="button go-back" type="button" aria-label="Undo last swipe">
             <i class="fas fa-undo"></i>
-          </div>
-          <div id="like-button" class="button like">
+          </button>
+          <button id="like-button" class="button like" type="button" aria-label="Like meal">
             <i class="fas fa-thumbs-up"></i>
-          </div>
+          </button>
         </div>
       </div>
     </div>

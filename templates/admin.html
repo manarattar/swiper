@@ -1,0 +1,461 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>SwipeEat Admin</title>
+  <style>
+    :root{
+      --peach: #FFE8DA;
+      --taupe: #5F5143;
+      --espresso: #4F3525;
+      --olive: #686928;
+      --orange: #D17F2D;
+      --card: #FFF7F1;
+      --stroke: rgba(95,81,67,.22);
+      --shadow: 0 10px 20px rgba(79,53,37,.16);
+      --danger: #dc3545;
+    }
+    *{ box-sizing: border-box; }
+    body{
+      margin: 0;
+      font-family: system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, "Apple Color Emoji", "Segoe UI Emoji";
+      color: var(--espresso);
+      background: radial-gradient(1200px 800px at 20% -10%, var(--card) 0%, var(--peach) 60%);
+      line-height: 1.45;
+    }
+    .header{ position: sticky; top: 0; z-index: 4; background: rgba(255,232,218,.92); border-bottom: 1px solid var(--stroke); backdrop-filter: blur(8px); }
+    .header-inner,
+    .page{ width: min(1180px, 100%); margin: 0 auto; padding: 16px; }
+    .header-inner{ display: flex; align-items: center; justify-content: space-between; gap: 16px; }
+    h1{ margin: 0; color: var(--orange); font-size: 1.7rem; letter-spacing: 0; }
+    .muted{ color: rgba(95,81,67,.92); }
+    .analytics-grid{ display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 12px; margin-bottom: 18px; }
+    .metric-card{ background: rgba(255,247,241,.82); border: 1px solid var(--stroke); border-radius: 14px; box-shadow: 0 6px 14px rgba(79,53,37,.08); padding: 12px; }
+    .metric-card strong{ display: block; font-size: 1.6rem; color: var(--orange); line-height: 1.1; }
+    .metric-card span{ color: rgba(95,81,67,.92); font-weight: 800; font-size: .82rem; }
+    .analytics-panels{ display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; margin-bottom: 18px; }
+    .analytics-list{ display: grid; gap: 8px; margin: 0; padding: 0; list-style: none; }
+    .analytics-list li{ display: flex; justify-content: space-between; gap: 10px; padding-bottom: 8px; border-bottom: 1px solid rgba(95,81,67,.16); font-size: .92rem; }
+    .analytics-list li:last-child{ border-bottom: none; padding-bottom: 0; }
+    .analytics-main{ min-width: 0; }
+    .analytics-meta{ color: rgba(95,81,67,.86); font-size: .82rem; }
+    .analytics-value{ font-weight: 900; color: var(--espresso); text-align: right; }
+    .status-select{ min-width: 116px; border-radius: 10px; padding: 7px 9px; font-weight: 800; }
+    .panel-heading{ display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-bottom: 12px; }
+    .panel-heading h2{ margin: 0; }
+    .live-pill{ display: inline-flex; align-items: center; gap: 6px; padding: 4px 8px; border-radius: 999px; background: rgba(104,105,40,.14); color: var(--olive); font-size: .78rem; font-weight: 900; }
+    .live-dot{ width: 7px; height: 7px; border-radius: 50%; background: var(--olive); animation: pulse 1.4s ease-in-out infinite; }
+    .new-order-flash{ animation: flash-order 1.2s ease; }
+    @keyframes pulse{ 0%,100%{ opacity: .45; } 50%{ opacity: 1; } }
+    @keyframes flash-order{ 0%{ background: rgba(209,127,45,.24); } 100%{ background: transparent; } }
+    .layout{ display: grid; grid-template-columns: 390px minmax(0, 1fr); gap: 18px; align-items: start; }
+    .panel,
+    .meal-row{ background: rgba(255,247,241,.82); border: 1px solid var(--stroke); border-radius: 16px; box-shadow: var(--shadow); }
+    .panel{ padding: 16px; }
+    .panel h2{ margin: 0 0 12px; font-size: 1.15rem; }
+    .panel-heading h2{ margin: 0; }
+    form{ display: grid; gap: 10px; }
+    .logout-form{ display: inline; }
+    label{ display: grid; gap: 5px; font-weight: 800; font-size: .9rem; }
+    input,
+    textarea,
+    select{ width: 100%; border: 1px solid rgba(95,81,67,.28); border-radius: 10px; padding: 9px 10px; font: inherit; color: var(--espresso); background: #fff; }
+    textarea{ min-height: 84px; resize: vertical; }
+    .form-grid{ display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+    .checkbox-row{ display: flex; align-items: center; gap: 9px; font-weight: 800; }
+    .checkbox-row input{ width: auto; }
+    .button-row{ display: flex; gap: 8px; flex-wrap: wrap; }
+    button,
+    .nav-link{ appearance: none; border: none; border-radius: 10px; padding: 9px 12px; font: inherit; font-weight: 900; cursor: pointer; color: #fff; background: var(--orange); text-decoration: none; }
+    button.secondary{ background: var(--olive); }
+    button.danger{ background: var(--danger); }
+    button.ghost{ background: rgba(95,81,67,.16); color: var(--espresso); }
+    .meal-list{ display: grid; gap: 12px; }
+    .meal-row{ display: grid; grid-template-columns: 118px minmax(0, 1fr); gap: 12px; padding: 12px; }
+    .meal-row img{ width: 118px; height: 104px; object-fit: cover; border-radius: 12px; background: rgba(95,81,67,.12); }
+    .meal-row h3{ margin: 0; }
+    .chips{ display: flex; flex-wrap: wrap; gap: 6px; margin: 8px 0; }
+    .chip{ padding: 4px 8px; border-radius: 999px; background: rgba(95,81,67,.12); color: rgba(79,53,37,.96); font-size: .82rem; font-weight: 800; }
+    .row-actions{ display: flex; gap: 8px; flex-wrap: wrap; margin-top: 8px; }
+    .status{ min-height: 22px; font-weight: 800; color: var(--olive); }
+    .status.error{ color: var(--danger); }
+    @media (max-width: 980px){
+      .analytics-grid{ grid-template-columns: repeat(3, minmax(0, 1fr)); }
+      .analytics-panels{ grid-template-columns: 1fr; }
+    }
+    @media (max-width: 850px){
+      .layout{ grid-template-columns: 1fr; }
+      .meal-row{ grid-template-columns: 1fr; }
+      .meal-row img{ width: 100%; height: 210px; }
+    }
+    @media (max-width: 620px){
+      .header-inner{ align-items: flex-start; flex-direction: column; }
+      .analytics-grid{ grid-template-columns: repeat(2, minmax(0, 1fr)); }
+      .form-grid{ grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+  <header class="header">
+    <div class="header-inner">
+      <div>
+        <h1>Menu Admin</h1>
+        <div class="muted">Manage SwipeEat meals, live orders, availability, prices, and allergens.</div>
+      </div>
+      <div class="button-row"><a class="nav-link" href="{{ url_for('menu') }}">View Menu</a><a class="nav-link" href="{{ url_for('kitchen') }}">Kitchen Mode</a><form method="POST" action="{{ url_for('admin_logout') }}" class="logout-form"><input type="hidden" name="_csrf" value="{{ csrf_token() }}"><button type="submit" class="ghost">Log Out</button></form></div>
+    </div>
+  </header>
+
+  <main class="page">
+    <section aria-label="Admin analytics">
+      <div class="analytics-grid">
+        <div class="metric-card"><strong id="metric-orders">0</strong><span>Total orders</span></div>
+        <div class="metric-card"><strong id="metric-active-orders">0</strong><span>Active orders</span></div>
+        <div class="metric-card"><strong id="metric-swipes">0</strong><span>Total swipes</span></div>
+        <div class="metric-card"><strong id="metric-likes">0</strong><span>Likes</span></div>
+        <div class="metric-card"><strong id="metric-available">0</strong><span>Available meals</span></div>
+        <div class="metric-card"><strong id="metric-hidden">0</strong><span>Hidden meals</span></div>
+      </div>
+      <div class="analytics-panels">
+        <div class="panel">
+          <div class="panel-heading"><h2>Latest Orders</h2><span id="live-refresh-state" class="live-pill"><span class="live-dot"></span><span>Live</span></span></div>
+          <div class="button-row" id="order-tabs"><button class="ghost" type="button" data-order-filter="active">Active</button><button class="ghost" type="button" data-order-filter="new">New</button><button class="ghost" type="button" data-order-filter="preparing">Preparing</button><button class="ghost" type="button" data-order-filter="completed">Completed</button><button class="ghost" type="button" data-order-filter="cancelled">Cancelled</button></div><ul id="latest-orders" class="analytics-list"></ul>
+        </div>
+        <div class="panel">
+          <h2>Most Ordered</h2>
+          <ul id="orders-by-meal" class="analytics-list"></ul>
+        </div>
+        <div class="panel">
+          <h2>Swipe Performance</h2>
+          <ul id="swipe-stats" class="analytics-list"></ul>
+        </div>
+      </div>
+    </section>
+    <div class="layout">
+      <section class="panel" aria-label="Meal editor">
+        <h2 id="form-title">Add Meal</h2>
+        <form id="meal-form">
+          <input type="hidden" id="original-name">
+          <label>Name<input id="name" required></label>
+          <label>Description<textarea id="description" required></textarea></label>
+          <label>Image path<input id="img" required placeholder="static/meal_images/example.png"></label>
+          <div class="form-grid">
+            <label>Cuisine<input id="category" required></label>
+            <label>Meat kind<input id="meatKind" required></label>
+            <label>Taste<input id="taste" required></label>
+            <label>Mood<input id="emotion" required></label>
+            <label>Emoji<input id="emoji" required></label>
+            <label>Price<input id="price" placeholder="$12.00"></label>
+          </div>
+          <label>Allergens<input id="allergens" placeholder="nuts, dairy, shellfish"></label>
+          <div class="form-grid">
+            <label class="checkbox-row"><input id="spicy" type="checkbox"> Spicy</label>
+            <label class="checkbox-row"><input id="available" type="checkbox" checked> Available</label>
+          </div>
+          <div class="button-row">
+            <button type="submit">Save Meal</button>
+            <button class="ghost" type="button" id="reset-button">Clear</button>
+          </div>
+          <div id="status" class="status" role="status"></div>
+        </form>
+      </section>
+
+      <section class="panel" aria-label="Operations"><h2>Operations</h2><div class="form-grid"><label>Order search<input id="order-search" placeholder="order, table, meal"></label><label>QR tables<input id="qr-count" type="number" min="1" value="12"></label></div><div class="button-row"><button type="button" id="search-orders">Search Orders</button><button type="button" id="load-inventory" class="secondary">Inventory</button><button type="button" id="generate-qr" class="ghost">QR Codes</button><a class="nav-link" href="{{ url_for('admin_export_orders') }}">Orders CSV</a><a class="nav-link" href="{{ url_for('admin_export_meals') }}">Meals CSV</a></div><ul id="ops-output" class="analytics-list"></ul></section><section aria-label="Meal list">
+        <div id="meal-list" class="meal-list"></div>
+      </section>
+    </div>
+  </main>
+
+  <script>
+    let meals = {{ meals|tojson }};
+    const CSRF_TOKEN = "{{ csrf_token() }}";
+    const orderStatuses = ["new", "preparing", "completed", "cancelled"];
+    const list = document.getElementById("meal-list");
+    const form = document.getElementById("meal-form");
+    const statusEl = document.getElementById("status");
+    const formTitle = document.getElementById("form-title");
+    const fields = ["name", "description", "img", "category", "meatKind", "taste", "emotion", "emoji", "price", "allergens", "spicy", "available"];
+    const liveRefreshState = document.getElementById("live-refresh-state");
+    let latestSeenOrderId = null;
+    let analyticsRefreshing = false;
+    let currentOrderFilter = "active";
+
+    function jsonHeaders(){
+      return { "Content-Type": "application/json", "X-CSRF-Token": CSRF_TOKEN };
+    }
+
+    function csrfHeaders(){
+      return { "X-CSRF-Token": CSRF_TOKEN };
+    }
+
+    function escapeHtml(value){
+      return String(value ?? "").replace(/[&<>'"]/g, character => ({
+        "&": "&amp;",
+        "<": "&lt;",
+        ">": "&gt;",
+        "'": "&#39;",
+        '"': "&quot;"
+      }[character]));
+    }
+
+    function setStatus(message, isError = false){
+      statusEl.textContent = message;
+      statusEl.classList.toggle("error", isError);
+    }
+
+    function setLiveRefreshState(message){
+      if (!liveRefreshState) return;
+      liveRefreshState.querySelector("span:last-child").textContent = message;
+    }
+
+    function mealPayload(){
+      return {
+        name: document.getElementById("name").value,
+        description: document.getElementById("description").value,
+        img: document.getElementById("img").value,
+        category: document.getElementById("category").value,
+        meatKind: document.getElementById("meatKind").value,
+        taste: document.getElementById("taste").value,
+        emotion: document.getElementById("emotion").value,
+        emoji: document.getElementById("emoji").value,
+        price: document.getElementById("price").value,
+        allergens: document.getElementById("allergens").value,
+        spicy: document.getElementById("spicy").checked,
+        available: document.getElementById("available").checked,
+      };
+    }
+
+    function fillForm(meal){
+      formTitle.textContent = `Edit ${meal.name}`;
+      document.getElementById("original-name").value = meal.name;
+      fields.forEach(id => {
+        const input = document.getElementById(id);
+        if (input.type === "checkbox") {
+          input.checked = Boolean(meal[id]);
+        } else if (id === "allergens") {
+          input.value = (meal.allergens || []).join(", ");
+        } else {
+          input.value = meal[id] || "";
+        }
+      });
+      setStatus("");
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    }
+
+    function clearForm(){
+      formTitle.textContent = "Add Meal";
+      document.getElementById("original-name").value = "";
+      form.reset();
+      document.getElementById("available").checked = true;
+      setStatus("");
+    }
+
+    function renderAnalytics(analytics, options = {}){
+      const totals = analytics.totals || {};
+      let latestOrders = analytics.latestOrders || [];
+      const newestOrderId = latestOrders.length ? latestOrders[0].id : null;
+      const hasNewOrder = latestSeenOrderId !== null && newestOrderId !== null && newestOrderId > latestSeenOrderId;
+      if (newestOrderId !== null) latestSeenOrderId = newestOrderId;
+
+      document.getElementById("metric-orders").textContent = totals.orders || 0;
+      document.getElementById("metric-active-orders").textContent = totals.activeOrders || 0;
+      document.getElementById("metric-swipes").textContent = totals.swipes || 0;
+      document.getElementById("metric-likes").textContent = totals.likes || 0;
+      document.getElementById("metric-available").textContent = totals.availableMeals || 0;
+      document.getElementById("metric-hidden").textContent = totals.hiddenMeals || 0;
+
+      renderAnalyticsList("latest-orders", latestOrders, order => {
+        const tableText = order.tableNumber ? `Table ${escapeHtml(order.tableNumber)}` : "No table";
+        const notesText = order.notes ? ` - ${escapeHtml(order.notes)}` : "";
+        const options = orderStatuses.map(status => `<option value="${status}" ${status === order.status ? "selected" : ""}>${status}</option>`).join("");
+        return `
+          <span class="analytics-main">
+            <strong>#${order.id} ${escapeHtml(order.mealName)} x${order.quantity}</strong><br>
+            <span class="analytics-meta">${tableText}${notesText}<br>${new Date(order.createdAt).toLocaleString()}</span>
+          </span>
+          <span class="analytics-value"><select class="status-select" data-order-id="${order.id}">${options}</select></span>
+        `;
+      }, "No orders yet");
+      bindOrderStatusControls();
+      if (hasNewOrder && !options.silent) {
+        const latestOrdersEl = document.getElementById("latest-orders");
+        latestOrdersEl.classList.add("new-order-flash");
+        setTimeout(() => latestOrdersEl.classList.remove("new-order-flash"), 1300);
+        setStatus(`New order #${newestOrderId} received.`);
+      }
+
+      renderAnalyticsList("orders-by-meal", analytics.ordersByMeal || [], item => `
+        <span>${escapeHtml(item.mealName)}</span><span class="analytics-value">${item.orders}</span>
+      `, "No orders yet");
+      renderAnalyticsList("swipe-stats", analytics.swipeStats || [], item => `
+        <span>${escapeHtml(item.mealName)}</span><span class="analytics-value">${item.likeRate}% like (${item.likes}/${item.total})</span>
+      `, "No swipes yet");
+    }
+
+    function renderAnalyticsList(id, items, rowTemplate, emptyText){
+      const target = document.getElementById(id);
+      target.innerHTML = "";
+      if (!items.length) {
+        const empty = document.createElement("li");
+        empty.textContent = emptyText;
+        target.appendChild(empty);
+        return;
+      }
+      items.forEach(item => {
+        const li = document.createElement("li");
+        li.innerHTML = rowTemplate(item);
+        target.appendChild(li);
+      });
+    }
+
+    async function refreshAnalytics(options = {}){
+      if (analyticsRefreshing) return;
+      if (document.activeElement && document.activeElement.classList.contains("status-select")) return;
+      analyticsRefreshing = true;
+      setLiveRefreshState("Updating");
+      try {
+        const response = await fetch("/admin/analytics");
+        if (!response.ok) return;
+        const analytics = await response.json();
+        if (currentOrderFilter) {
+          const ordersResponse = await fetch(`/admin/orders?status=${currentOrderFilter}`);
+          if (ordersResponse.ok) analytics.latestOrders = (await ordersResponse.json()).orders.slice(0, 8);
+        }
+        renderAnalytics(analytics, options);
+      } finally {
+        analyticsRefreshing = false;
+        setLiveRefreshState("Live");
+      }
+    }
+
+    function bindOrderStatusControls(){
+      document.querySelectorAll(".status-select").forEach(select => {
+        select.addEventListener("change", () => updateOrderStatus(select.dataset.orderId, select.value));
+      });
+    }
+
+    async function updateOrderStatus(orderId, status){
+      const response = await fetch(`/admin/orders/${orderId}`, {
+        method: "PUT",
+        headers: jsonHeaders(),
+        body: JSON.stringify({ status }),
+      });
+      const data = await response.json();
+      if (!response.ok) {
+        setStatus(data.error || "Could not update order", true);
+        await refreshAnalytics({ silent: true });
+        return;
+      }
+      setStatus(`Order #${data.order.id} marked ${data.order.status}.`);
+      await refreshAnalytics({ silent: true });
+    }
+
+    function renderMeals(){
+      list.innerHTML = "";
+      meals.forEach(meal => {
+        const row = document.createElement("article");
+        row.className = "meal-row";
+        row.innerHTML = `
+          <img src="${escapeHtml(meal.img)}" alt="${escapeHtml(meal.name)} image">
+          <div>
+            <h3>${escapeHtml(meal.emoji)} ${escapeHtml(meal.name)}</h3>
+            <p class="muted">${escapeHtml(meal.description)}</p>
+            <div class="chips">
+              <span class="chip">${escapeHtml(meal.category)}</span>
+              <span class="chip">${escapeHtml(meal.meatKind)}</span>
+              <span class="chip">${escapeHtml(meal.taste)}</span>
+              <span class="chip">${meal.spicy ? "Spicy" : "Mild"}</span>
+              <span class="chip">${meal.available ? "Available" : "Hidden"}</span>
+              ${meal.price ? `<span class="chip">${escapeHtml(meal.price)}</span>` : ""}
+              ${(meal.allergens || []).map(item => `<span class="chip">${escapeHtml(item)}</span>`).join("")}
+            </div>
+            <div class="row-actions">
+              <button class="secondary" type="button">Edit</button>
+              <button class="danger" type="button">Delete</button>
+            </div>
+          </div>
+        `;
+        row.querySelector(".secondary").addEventListener("click", () => fillForm(meal));
+        row.querySelector(".danger").addEventListener("click", () => deleteMeal(meal.name));
+        list.appendChild(row);
+      });
+    }
+
+    async function refreshMeals(){
+      const response = await fetch("/admin/meals");
+      const data = await response.json();
+      meals = data.meals;
+      renderMeals();
+      refreshAnalytics({ silent: true });
+    }
+
+    async function saveMeal(event){
+      event.preventDefault();
+      const originalName = document.getElementById("original-name").value;
+      const response = await fetch(originalName ? `/admin/meals/${encodeURIComponent(originalName)}` : "/admin/meals", {
+        method: originalName ? "PUT" : "POST",
+        headers: jsonHeaders(),
+        body: JSON.stringify(mealPayload())
+      });
+      const data = await response.json();
+      if (!response.ok) {
+        setStatus(data.error || "Could not save meal", true);
+        return;
+      }
+      setStatus("Meal saved.");
+      clearForm();
+      await refreshMeals();
+      await refreshAnalytics({ silent: true });
+    }
+
+    async function deleteMeal(name){
+      if (!confirm(`Delete ${name}?`)) return;
+      const response = await fetch(`/admin/meals/${encodeURIComponent(name)}`, { method: "DELETE", headers: csrfHeaders() });
+      const data = await response.json();
+      if (!response.ok) {
+        setStatus(data.error || "Could not delete meal", true);
+        return;
+      }
+      setStatus("Meal deleted.");
+      clearForm();
+      await refreshMeals();
+      await refreshAnalytics({ silent: true });
+    }
+
+    form.addEventListener("submit", saveMeal);
+    document.getElementById("reset-button").addEventListener("click", clearForm);
+    const opsOutput = document.getElementById("ops-output");
+    function renderOps(items){ opsOutput.innerHTML = items.length ? items.map(item => `<li>${item}</li>`).join("") : "<li>No results.</li>"; }
+    document.getElementById("search-orders").addEventListener("click", async () => {
+      const q = encodeURIComponent(document.getElementById("order-search").value);
+      const response = await fetch(`/admin/orders/search?q=${q}`);
+      const data = await response.json();
+      renderOps((data.orders || []).map(order => `#${order.id} ${escapeHtml(order.mealName)} table ${escapeHtml(order.tableNumber || "-")} ${order.status} ${order.paymentStatus}`));
+    });
+    document.getElementById("load-inventory").addEventListener("click", async () => {
+      const response = await fetch("/admin/inventory");
+      const data = await response.json();
+      renderOps([...(data.lowStock || []).map(meal => `Low: ${escapeHtml(meal.name)} (${meal.stock})`), ...(data.soldOut || []).map(meal => `Sold out: ${escapeHtml(meal.name)}`)]);
+    });
+    document.getElementById("generate-qr").addEventListener("click", async () => {
+      const tables = encodeURIComponent(document.getElementById("qr-count").value || 12);
+      const response = await fetch(`/admin/qr-codes?tables=${tables}`);
+      const data = await response.json();
+      renderOps((data.codes || []).map(code => `Table ${code.table}: ${code.url}`));
+    });
+    document.querySelectorAll("[data-order-filter]").forEach(button => {
+      button.addEventListener("click", () => {
+        currentOrderFilter = button.dataset.orderFilter;
+        refreshAnalytics({ silent: true });
+      });
+    });
+    renderMeals();
+    refreshAnalytics({ silent: true });
+    setInterval(() => refreshAnalytics(), 5000);
+    document.addEventListener("visibilitychange", () => {
+      if (!document.hidden) refreshAnalytics({ silent: true });
+    });
+  </script>
+</body>
+</html>

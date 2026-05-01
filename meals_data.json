@@ -1,112 +1,165 @@
 [
-    {
-      "name": "Currywurst",
-      "img": "static/meal_images/Currywurst.png",
-      "description": "German sausage served with a tangy curry ketchup sauce.",
-      "category": "German",
-      "meatKind": "Pork",
-      "taste": "Savory",
-      "spicy": false,
-      "emotion": "Adventurous",
-      "emoji": "🚀"
-    },
-    {
-      "name": "Fettuccine Alfredo",
-      "img": "static/meal_images/Fettuccine_Alfredo.png",
-      "description": "Creamy pasta dish made with butter, cream, and Parmesan cheese.",
-      "category": "Italian",
-      "meatKind": "Vegetarian",
-      "taste": "Savory",
-      "spicy": false,
-      "emotion": "Comforting",
-      "emoji": "🤗"
-    },
-    {
-      "name": "Samosas",
-      "img": "static/meal_images/Samosas.png",
-      "description": "Deep-fried pastries filled with spiced potatoes, peas, or meat.",
-      "category": "Indian",
-      "meatKind": "Vegetarian",
-      "taste": "Savory",
-      "spicy": true,
-      "emotion": "Adventurous",
-      "emoji": "🚀"
-    },
-    {
-      "name": "Pho Ga",
-      "img": "static/meal_images/Pho_Ga.png",
-      "description": "Vietnamese chicken noodle soup with aromatic herbs.",
-      "category": "Vietnamese",
-      "meatKind": "Chicken",
-      "taste": "Savory",
-      "spicy": false,
-      "emotion": "Comforting",
-      "emoji": "🤗"
-    },
-    {
-      "name": "Carbonara",
-      "img": "static/meal_images/Carbonara.png",
-      "description": "Italian pasta with eggs, cheese, pancetta, and black pepper.",
-      "category": "Italian",
-      "meatKind": "Pork",
-      "taste": "Savory",
-      "spicy": false,
-      "emotion": "Comforting",
-      "emoji": "🤗"
-    },
-    {
-      "name": "Gyros",
-      "img": "static/meal_images/Gyros.png",
-      "description": "Greek meat wrap with lamb or chicken, vegetables, and tzatziki.",
-      "category": "Greek",
-      "meatKind": "Lamb",
-      "taste": "Savory",
-      "spicy": false,
-      "emotion": "Adventurous",
-      "emoji": "🚀"
-    },
-    {
-      "name": "Couscous",
-      "img": "static/meal_images/Couscous.png",
-      "description": "North African steamed semolina grains served with vegetables or meat.",
-      "category": "North African",
-      "meatKind": "Varies",
-      "taste": "Savory",
-      "spicy": false,
-      "emotion": "Adventurous",
-      "emoji": "🚀"
-    },
-    {
-      "name": "Shrimp Tempura",
-      "img": "static/meal_images/Shrimp_Tempura.png",
-      "description": "Lightly battered and fried shrimp served with dipping sauce.",
-      "category": "Japanese",
-      "meatKind": "Shrimp",
-      "taste": "Savory",
-      "spicy": false,
-      "emotion": "Adventurous",
-      "emoji": "🚀"
-    },
-    {
-      "name": "Dolma",
-      "img": "static/meal_images/Dolma.png",
-      "description": "Grape leaves stuffed with rice and spices, sometimes with meat.",
-      "category": "Middle Eastern",
-      "meatKind": "Vegetarian",
-      "taste": "Savory",
-      "spicy": false,
-      "emotion": "Nostalgic",
-      "emoji": "💭"
-    },
-    {
-      "name": "Crab Cakes",
-      "img": "static/meal_images/Crab_Cakes.png",
-      "description": "Pan-fried patties made with lump crab meat and breadcrumbs.",
-      "category": "American",
-      "meatKind": "Seafood",
-      "taste": "Savory",
-      "spicy": false,
-      "emotion": "Nostalgic",
-      "emoji": "💭"
-    }]
-   
+  {
+    "name": "Currywurst",
+    "img": "static/meal_images/Currywurst.png",
+    "description": "German sausage served with a tangy curry ketchup sauce.",
+    "category": "German",
+    "meatKind": "Pork",
+    "taste": "Savory",
+    "spicy": false,
+    "emotion": "Adventurous",
+    "emoji": "🚀",
+    "price": "$9.50",
+    "allergens": [
+      "pork"
+    ],
+    "available": true
+  },
+  {
+    "name": "Fettuccine Alfredo",
+    "img": "static/meal_images/Fettuccine_Alfredo.png",
+    "description": "Creamy pasta dish made with butter, cream, and Parmesan cheese.",
+    "category": "Italian",
+    "meatKind": "Vegetarian",
+    "taste": "Savory",
+    "spicy": false,
+    "emotion": "Comforting",
+    "emoji": "🤗",
+    "price": "$12.00",
+    "allergens": [
+      "dairy",
+      "gluten"
+    ],
+    "available": true
+  },
+  {
+    "name": "Samosas",
+    "img": "static/meal_images/Samosas.png",
+    "description": "Deep-fried pastries filled with spiced potatoes, peas, or meat.",
+    "category": "Indian",
+    "meatKind": "Vegetarian",
+    "taste": "Savory",
+    "spicy": true,
+    "emotion": "Adventurous",
+    "emoji": "🚀",
+    "price": "$7.50",
+    "allergens": [
+      "gluten"
+    ],
+    "available": true
+  },
+  {
+    "name": "Pho Ga",
+    "img": "static/meal_images/Pho_Ga.png",
+    "description": "Vietnamese chicken noodle soup with aromatic herbs.",
+    "category": "Vietnamese",
+    "meatKind": "Chicken",
+    "taste": "Savory",
+    "spicy": false,
+    "emotion": "Comforting",
+    "emoji": "🤗",
+    "price": "$11.50",
+    "allergens": [],
+    "available": true
+  },
+  {
+    "name": "Carbonara",
+    "img": "static/meal_images/Carbonara.png",
+    "description": "Italian pasta with eggs, cheese, pancetta, and black pepper.",
+    "category": "Italian",
+    "meatKind": "Pork",
+    "taste": "Savory",
+    "spicy": false,
+    "emotion": "Comforting",
+    "emoji": "🤗",
+    "price": "$13.00",
+    "allergens": [
+      "egg",
+      "dairy",
+      "gluten"
+    ],
+    "available": true
+  },
+  {
+    "name": "Gyros",
+    "img": "static/meal_images/Gyros.png",
+    "description": "Greek meat wrap with lamb or chicken, vegetables, and tzatziki.",
+    "category": "Greek",
+    "meatKind": "Lamb",
+    "taste": "Savory",
+    "spicy": false,
+    "emotion": "Adventurous",
+    "emoji": "🚀",
+    "price": "$10.50",
+    "allergens": [
+      "dairy",
+      "gluten"
+    ],
+    "available": true
+  },
+  {
+    "name": "Couscous",
+    "img": "static/meal_images/Couscous.png",
+    "description": "North African steamed semolina grains served with vegetables or meat.",
+    "category": "North African",
+    "meatKind": "Varies",
+    "taste": "Savory",
+    "spicy": false,
+    "emotion": "Adventurous",
+    "emoji": "🚀",
+    "price": "$10.00",
+    "allergens": [
+      "gluten"
+    ],
+    "available": true
+  },
+  {
+    "name": "Shrimp Tempura",
+    "img": "static/meal_images/Shrimp_Tempura.png",
+    "description": "Lightly battered and fried shrimp served with dipping sauce.",
+    "category": "Japanese",
+    "meatKind": "Shrimp",
+    "taste": "Savory",
+    "spicy": false,
+    "emotion": "Adventurous",
+    "emoji": "🚀",
+    "price": "$14.00",
+    "allergens": [
+      "shellfish",
+      "gluten"
+    ],
+    "available": true
+  },
+  {
+    "name": "Dolma",
+    "img": "static/meal_images/Dolma.png",
+    "description": "Grape leaves stuffed with rice and spices, sometimes with meat.",
+    "category": "Middle Eastern",
+    "meatKind": "Vegetarian",
+    "taste": "Savory",
+    "spicy": false,
+    "emotion": "Nostalgic",
+    "emoji": "💭",
+    "price": "$8.50",
+    "allergens": [],
+    "available": true
+  },
+  {
+    "name": "Crab Cakes",
+    "img": "static/meal_images/Crab_Cakes.png",
+    "description": "Pan-fried patties made with lump crab meat and breadcrumbs.",
+    "category": "American",
+    "meatKind": "Seafood",
+    "taste": "Savory",
+    "spicy": false,
+    "emotion": "Nostalgic",
+    "emoji": "💭",
+    "price": "$15.00",
+    "allergens": [
+      "shellfish",
+      "gluten",
+      "egg"
+    ],
+    "available": true
+  }
+]

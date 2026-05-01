@@ -1,0 +1,85 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Admin Login</title>
+  <style>
+    :root{
+      --peach: #FFE8DA;
+      --espresso: #4F3525;
+      --orange: #D17F2D;
+      --card: #FFF7F1;
+      --stroke: rgba(95,81,67,.22);
+      --shadow: 0 10px 20px rgba(79,53,37,.16);
+      --danger: #dc3545;
+    }
+    *{ box-sizing: border-box; }
+    body{
+      margin: 0;
+      min-height: 100vh;
+      display: grid;
+      place-items: center;
+      padding: 16px;
+      font-family: system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, "Apple Color Emoji", "Segoe UI Emoji";
+      color: var(--espresso);
+      background: radial-gradient(1200px 800px at 20% -10%, var(--card) 0%, var(--peach) 60%);
+    }
+    .panel{
+      width: min(420px, 100%);
+      padding: 22px;
+      border-radius: 16px;
+      border: 1px solid var(--stroke);
+      background: rgba(255,247,241,.86);
+      box-shadow: var(--shadow);
+    }
+    h1{
+      margin: 0 0 8px;
+      color: var(--orange);
+      letter-spacing: 0;
+    }
+    p{ margin: 0 0 16px; color: rgba(95,81,67,.95); }
+    form{ display: grid; gap: 12px; }
+    label{ display: grid; gap: 6px; font-weight: 900; }
+    input{
+      border: 1px solid rgba(95,81,67,.28);
+      border-radius: 10px;
+      padding: 10px 11px;
+      font: inherit;
+      color: var(--espresso);
+      background: #fff;
+    }
+    button{
+      appearance: none;
+      border: none;
+      border-radius: 10px;
+      padding: 10px 14px;
+      font: inherit;
+      font-weight: 900;
+      cursor: pointer;
+      color: #fff;
+      background: var(--orange);
+    }
+    .error{
+      padding: 9px 10px;
+      border-radius: 10px;
+      background: rgba(220,53,69,.12);
+      color: var(--danger);
+      font-weight: 900;
+    }
+  </style>
+</head>
+<body>
+  <main class="panel">
+    <h1>Admin Login</h1>
+    <p>Enter your admin username and password to manage the SwipeEat menu.</p>
+    {% if error %}<div class="error">{{ error }}</div>{% endif %}
+    <form method="POST" action="{{ url_for('admin_login') }}">
+      <input type="hidden" name="next" value="{{ next_url }}">
+      <label>Username<input name="username" autocomplete="username" value="{{ username }}" required autofocus></label>
+      <label>Password<input type="password" name="password" autocomplete="current-password" required></label>
+      <button type="submit">Log In</button>
+    </form>
+  </main>
+</body>
+</html>

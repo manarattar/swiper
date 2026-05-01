@@ -317,3 +317,92 @@ header{
   position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px;
   overflow: hidden; clip: rect(0,0,0,0); white-space: nowrap; border: 0;
 }
+
+.progress-panel{
+  margin-bottom: 14px;
+  padding: 12px 14px;
+  border: 1px solid var(--stroke);
+  border-radius: 14px;
+  background: rgba(255,247,241,.78);
+  box-shadow: 0 6px 14px rgba(79,53,37,.08);
+}
+
+.progress-copy{
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 8px;
+  font-size: .92rem;
+  font-weight: 800;
+  color: var(--espresso);
+}
+
+#progress-remaining{
+  color: rgba(95,81,67,.9);
+  font-weight: 700;
+}
+
+.progress-track{
+  height: 8px;
+  overflow: hidden;
+  border-radius: 999px;
+  background: rgba(95,81,67,.18);
+}
+
+.progress-bar{
+  height: 100%;
+  width: 0;
+  border-radius: inherit;
+  background: linear-gradient(90deg, var(--olive), var(--orange));
+  transition: width .25s ease;
+}
+
+.card{
+  position: relative;
+  touch-action: none;
+  user-select: none;
+}
+
+.card.dragging{
+  transition: none;
+  cursor: grabbing;
+}
+
+.swipe-choice{
+  position: absolute;
+  top: 96px;
+  z-index: 2;
+  padding: 7px 14px;
+  border-radius: 999px;
+  font-weight: 900;
+  text-transform: uppercase;
+  letter-spacing: 0;
+  opacity: 0;
+  pointer-events: none;
+  background: rgba(255,247,241,.86);
+  border: 2px solid transparent;
+}
+
+.choice-like{
+  right: 22px;
+  color: var(--like);
+  border-color: var(--like);
+  opacity: 1;
+}
+
+.choice-skip{
+  left: 22px;
+  color: var(--dislike);
+  border-color: var(--dislike);
+  opacity: 1;
+}
+
+.swipe-hint{
+  margin-top: 8px;
+  color: rgba(95,81,67,.86);
+  font-size: .9rem;
+}
+
+button.button{
+  padding: 0;
+}
