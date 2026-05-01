@@ -185,6 +185,8 @@ class AdminMealManagementTestCase(DatabaseTestCase):
         self.assertIn("Latest Orders", html)
         self.assertIn("Swipe Performance", html)
         self.assertIn("status-select", html)
+        self.assertIn("payment-select", html)
+        self.assertIn("updatePaymentStatus", html)
         self.assertIn("live-refresh-state", html)
         self.assertIn("setInterval(() => refreshAnalytics(), 5000)", html)
 
