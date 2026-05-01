@@ -311,7 +311,7 @@ def admin_update_order_payment(order_id):
 @admin_required
 def admin_order_search():
     try:
-        orders = searchOrders(request.args.get("q", ""), status=request.args.get("status") or None)
+        orders = searchOrders(request.args.get("q", ""), status=request.args.get("status") or None, payment_status=request.args.get("paymentStatus") or None)
     except ValueError as exc:
         return jsonify({"error": str(exc)}), 400
     return jsonify({"orders": orders})
@@ -395,7 +395,7 @@ def kitchen():
 def admin_orders():
     status = request.args.get("status") or None
     try:
-        orders = getOrders(status=status)
+        orders = getOrders(status=status, payment_status=request.args.get("paymentStatus") or None)
     except ValueError as exc:
         return jsonify({"error": str(exc)}), 400
     return jsonify({"orders": orders})

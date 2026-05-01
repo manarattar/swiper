@@ -531,18 +531,27 @@ def getOrderByToken(token):
     with connect_db() as conn:
         row = conn.execute("SELECT * FROM orders WHERE tracking_token = ?", (str(token or "").strip(),)).fetchone()
     return row_to_order(row) if row else None
-def getOrders(limit=None, status=None):
+def getOrders(limit=None, status=None, payment_status=None):
     init_database()
     query = "SELECT * FROM orders"
     params = []
+    clauses = []
     if status is not None:
         if status == "active":
-            query += " WHERE status IN ('new', 'preparing')"
+            clauses.append("status IN ('new', 'preparing')")
         else:
             if status not in VALID_ORDER_STATUSES:
                 raise ValueError(f"Invalid order status: {status}")
-            query += " WHERE status = ?"
+            clauses.append("status = ?")
             params.append(status)
+    if payment_status:
+        payment_status = str(payment_status).strip().lower()
+        if payment_status not in VALID_PAYMENT_STATUSES:
+            raise ValueError(f"Invalid payment status: {payment_status}")
+        clauses.append("payment_status = ?")
+        params.append(payment_status)
+    if clauses:
+        query += " WHERE " + " AND ".join(clauses)
     query += " ORDER BY id DESC"
     if limit is not None:
         query += " LIMIT ?"
@@ -579,7 +588,7 @@ def updateOrderPaymentStatus(order_id, payment_status):
     return getOrderById(order_id)
 
 
-def searchOrders(term="", status=None, limit=50):
+def searchOrders(term="", status=None, payment_status=None, limit=50):
     init_database()
     query = "SELECT * FROM orders"
     params = []
@@ -592,11 +601,17 @@ def searchOrders(term="", status=None, limit=50):
             params.append(status)
         else:
             raise ValueError(f"Invalid order status: {status}")
+    if payment_status:
+        payment_status = str(payment_status).strip().lower()
+        if payment_status not in VALID_PAYMENT_STATUSES:
+            raise ValueError(f"Invalid payment status: {payment_status}")
+        clauses.append("payment_status = ?")
+        params.append(payment_status)
     term = str(term or "").strip()
     if term:
-        clauses.append("(CAST(id AS TEXT) = ? OR lower(meal_name) LIKE lower(?) OR lower(table_number) LIKE lower(?) OR lower(status) LIKE lower(?))")
+        clauses.append("(CAST(id AS TEXT) = ? OR lower(meal_name) LIKE lower(?) OR lower(table_number) LIKE lower(?) OR lower(status) LIKE lower(?) OR lower(payment_status) LIKE lower(?))")
         like = f"%{term}%"
-        params.extend([term, like, like, like])
+        params.extend([term, like, like, like, like])
     if clauses:
         query += " WHERE " + " AND ".join(clauses)
     query += " ORDER BY id DESC LIMIT ?"
@@ -660,6 +675,11 @@ def getAdminAnalytics():
         available_meals = conn.execute("SELECT COUNT(*) FROM meals WHERE available = 1").fetchone()[0]
         hidden_meals = conn.execute("SELECT COUNT(*) FROM meals WHERE available = 0").fetchone()[0]
         revenue_total = conn.execute("SELECT COALESCE(SUM(total_price), 0) FROM orders WHERE status != 'cancelled'").fetchone()[0]
+        today_start = datetime.now(timezone.utc).replace(hour=0, minute=0, second=0, microsecond=0).isoformat()
+        today_orders = conn.execute("SELECT COUNT(*) FROM orders WHERE created_at >= ?", (today_start,)).fetchone()[0]
+        today_active_orders = conn.execute("SELECT COUNT(*) FROM orders WHERE created_at >= ? AND status IN ('new', 'preparing')", (today_start,)).fetchone()[0]
+        today_revenue = conn.execute("SELECT COALESCE(SUM(total_price), 0) FROM orders WHERE created_at >= ? AND status != 'cancelled'", (today_start,)).fetchone()[0]
+        payment_rows = conn.execute("SELECT payment_status, COUNT(*) AS count FROM orders GROUP BY payment_status").fetchall()
         status_rows = conn.execute("SELECT status, COUNT(*) AS count FROM orders GROUP BY status").fetchall()
         order_rows = conn.execute(
             """
@@ -712,8 +732,12 @@ def getAdminAnalytics():
             "availableMeals": available_meals,
             "hiddenMeals": hidden_meals,
             "revenue": round(revenue_total or 0, 2),
+            "todayOrders": today_orders,
+            "todayActiveOrders": today_active_orders,
+            "todayRevenue": round(today_revenue or 0, 2),
         },
         "orderStatusCounts": {row["status"]: row["count"] for row in status_rows},
+        "paymentStatusCounts": {row["payment_status"]: row["count"] for row in payment_rows},
         "latestOrders": getOrders(limit=8),
         "ordersByMeal": [{"mealName": row["meal_name"], "orders": row["order_count"]} for row in order_rows],
         "lowStockMeals": [row_to_meal(row) for row in low_stock_rows],
