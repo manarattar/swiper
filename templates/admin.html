@@ -41,7 +41,10 @@
     .analytics-main{ min-width: 0; }
     .analytics-meta{ color: rgba(95,81,67,.86); font-size: .82rem; }
     .analytics-value{ font-weight: 900; color: var(--espresso); text-align: right; }
-    .status-select{ min-width: 116px; border-radius: 10px; padding: 7px 9px; font-weight: 800; }
+    .status-select,
+    .payment-select{ min-width: 116px; border-radius: 10px; padding: 7px 9px; font-weight: 800; }
+    .order-controls{ display: grid; gap: 6px; justify-items: end; }
+    .payment-select{ border-color: rgba(104,105,40,.45); }
     .panel-heading{ display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-bottom: 12px; }
     .panel-heading h2{ margin: 0; }
     .live-pill{ display: inline-flex; align-items: center; gap: 6px; padding: 4px 8px; border-radius: 999px; background: rgba(104,105,40,.14); color: var(--olive); font-size: .78rem; font-weight: 900; }
@@ -171,6 +174,7 @@
     let meals = {{ meals|tojson }};
     const CSRF_TOKEN = "{{ csrf_token() }}";
     const orderStatuses = ["new", "preparing", "completed", "cancelled"];
+    const paymentStatuses = ["unpaid", "paid", "refunded"];
     const list = document.getElementById("meal-list");
     const form = document.getElementById("meal-form");
     const statusEl = document.getElementById("status");
@@ -269,15 +273,20 @@
         const tableText = order.tableNumber ? `Table ${escapeHtml(order.tableNumber)}` : "No table";
         const notesText = order.notes ? ` - ${escapeHtml(order.notes)}` : "";
         const options = orderStatuses.map(status => `<option value="${status}" ${status === order.status ? "selected" : ""}>${status}</option>`).join("");
+        const paymentOptions = paymentStatuses.map(status => `<option value="${status}" ${status === order.paymentStatus ? "selected" : ""}>${status}</option>`).join("");
         return `
           <span class="analytics-main">
             <strong>#${order.id} ${escapeHtml(order.mealName)} x${order.quantity}</strong><br>
             <span class="analytics-meta">${tableText}${notesText}<br>${new Date(order.createdAt).toLocaleString()}</span>
           </span>
-          <span class="analytics-value"><select class="status-select" data-order-id="${order.id}">${options}</select></span>
+          <span class="analytics-value order-controls">
+            <select class="status-select" aria-label="Order status" data-order-id="${order.id}">${options}</select>
+            <select class="payment-select" aria-label="Payment status" data-order-id="${order.id}">${paymentOptions}</select>
+          </span>
         `;
       }, "No orders yet");
       bindOrderStatusControls();
+      bindPaymentStatusControls();
       if (hasNewOrder && !options.silent) {
         const latestOrdersEl = document.getElementById("latest-orders");
         latestOrdersEl.classList.add("new-order-flash");
@@ -311,7 +320,7 @@
 
     async function refreshAnalytics(options = {}){
       if (analyticsRefreshing) return;
-      if (document.activeElement && document.activeElement.classList.contains("status-select")) return;
+      if (document.activeElement && (document.activeElement.classList.contains("status-select") || document.activeElement.classList.contains("payment-select"))) return;
       analyticsRefreshing = true;
       setLiveRefreshState("Updating");
       try {
@@ -335,6 +344,12 @@
       });
     }
 
+    function bindPaymentStatusControls(){
+      document.querySelectorAll(".payment-select").forEach(select => {
+        select.addEventListener("change", () => updatePaymentStatus(select.dataset.orderId, select.value));
+      });
+    }
+
     async function updateOrderStatus(orderId, status){
       const response = await fetch(`/admin/orders/${orderId}`, {
         method: "PUT",
@@ -348,6 +363,22 @@
         return;
       }
       setStatus(`Order #${data.order.id} marked ${data.order.status}.`);
+      await refreshAnalytics({ silent: true });
+    }
+
+    async function updatePaymentStatus(orderId, paymentStatus){
+      const response = await fetch(`/admin/orders/${orderId}/payment`, {
+        method: "PUT",
+        headers: jsonHeaders(),
+        body: JSON.stringify({ paymentStatus }),
+      });
+      const data = await response.json();
+      if (!response.ok) {
+        setStatus(data.error || "Could not update payment", true);
+        await refreshAnalytics({ silent: true });
+        return;
+      }
+      setStatus(`Order #${data.order.id} payment marked ${data.order.paymentStatus}.`);
       await refreshAnalytics({ silent: true });
     }
 
