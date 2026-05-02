@@ -2,10 +2,12 @@ import logging
 import os
 import secrets
 import time
+import json
 from collections import defaultdict, deque
 from functools import wraps
+from threading import Condition
 
-from flask import Flask, Response, jsonify, redirect, render_template, request, session, url_for
+from flask import Flask, Response, jsonify, redirect, render_template, request, session, stream_with_context, url_for
 from backend import (
     addMeal,
     addOrder,
@@ -51,6 +53,62 @@ app.config["CSRF_ENABLED"] = os.environ.get("CSRF_ENABLED", "true").lower() != "
 logging.basicConfig(level=os.environ.get("LOG_LEVEL", "INFO"))
 logger = logging.getLogger(__name__)
 RATE_LIMITS = defaultdict(deque)
+ORDER_EVENT_CONDITION = Condition()
+ORDER_EVENTS = deque(maxlen=100)
+ORDER_EVENT_ID = 0
+
+
+def publish_order_event(event_type, order):
+    global ORDER_EVENT_ID
+    event = {
+        "type": event_type,
+        "order": order,
+        "orderId": order.get("id"),
+        "trackingToken": order.get("trackingToken"),
+        "createdAt": time.time(),
+    }
+    with ORDER_EVENT_CONDITION:
+        ORDER_EVENT_ID += 1
+        event["id"] = ORDER_EVENT_ID
+        ORDER_EVENTS.append(event)
+        ORDER_EVENT_CONDITION.notify_all()
+
+
+def order_event_payload(event):
+    return f"id: {event['id']}\nevent: {event['type']}\ndata: {json.dumps(event, default=str)}\n\n"
+
+
+def order_event_stream(token=None):
+    raw_last_id = request.headers.get("Last-Event-ID") or request.args.get("lastEventId")
+    with ORDER_EVENT_CONDITION:
+        last_seen = int(raw_last_id) if raw_last_id and raw_last_id.isdigit() else ORDER_EVENT_ID
+    yield ": connected\n\n"
+    while True:
+        with ORDER_EVENT_CONDITION:
+            pending = [
+                event for event in ORDER_EVENTS
+                if event["id"] > last_seen and (token is None or event.get("trackingToken") == token)
+            ]
+            if not pending:
+                ORDER_EVENT_CONDITION.wait(timeout=25)
+                pending = [
+                    event for event in ORDER_EVENTS
+                    if event["id"] > last_seen and (token is None or event.get("trackingToken") == token)
+                ]
+        if not pending:
+            yield ": heartbeat\n\n"
+            continue
+        for event in pending:
+            last_seen = event["id"]
+            yield order_event_payload(event)
+
+
+def event_stream_response(token=None):
+    return Response(
+        stream_with_context(order_event_stream(token)),
+        mimetype="text/event-stream",
+        headers={"Cache-Control": "no-cache", "X-Accel-Buffering": "no"},
+    )
 
 
 def is_admin_authenticated():
@@ -148,7 +206,7 @@ def admin_required(view):
     def wrapped(*args, **kwargs):
         if is_admin_authenticated():
             return view(*args, **kwargs)
-        if request.path.startswith(("/admin/meals", "/admin/analytics", "/admin/orders", "/admin/inventory", "/admin/qr-codes", "/admin/export", "/admin/system", "/admin/settings", "/kitchen")):
+        if request.path.startswith(("/admin/meals", "/admin/analytics", "/admin/orders", "/admin/events", "/admin/inventory", "/admin/qr-codes", "/admin/export", "/admin/system", "/admin/settings", "/kitchen")):
             return jsonify({"error": "Admin login required"}), 401
         return redirect(url_for("admin_login", next=request.path))
     return wrapped
@@ -321,6 +379,7 @@ def admin_update_order(order_id):
     except ValueError as exc:
         return jsonify({"error": str(exc)}), 400
     logger.info("Admin %s marked order %s as %s", current_admin()["username"], order_id, order["status"])
+    publish_order_event("order_updated", order)
     return jsonify({"order": order})
 
 
@@ -347,6 +406,7 @@ def create_order():
     history.insert(0, order["trackingToken"])
     session["orderHistory"] = history[:10]
     logger.info("Order %s created for %s", order["id"], order["mealName"])
+    publish_order_event("order_created", order)
     return jsonify({"order": order}), 201
 
 
@@ -366,6 +426,7 @@ def admin_update_order_payment(order_id):
     except ValueError as exc:
         return jsonify({"error": str(exc)}), 400
     logger.info("Admin %s marked order %s payment as %s", current_admin()["username"], order_id, order["paymentStatus"])
+    publish_order_event("payment_updated", order)
     return jsonify({"order": order})
 
 
@@ -461,6 +522,18 @@ def receipt(token):
         return render_template("error.html", status_code=404, title="Receipt Not Found", message="This receipt link does not match an order."), 404
     return render_template("receipt.html", order=order)
 
+
+@app.route("/orders/<token>/events")
+def order_status_events(token):
+    if getOrderByToken(token) is None:
+        return jsonify({"error": "Order not found"}), 404
+    return event_stream_response(token)
+
+
+@app.route("/admin/events")
+@admin_required
+def admin_events():
+    return event_stream_response()
 
 @app.route("/orders/<token>", methods=["GET"])
 def order_status(token):

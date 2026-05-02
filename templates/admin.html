@@ -215,7 +215,7 @@
           <span class="analytics-main">
             <strong>#${order.id} ${escapeHtml(order.mealName)} x${order.quantity}</strong><br>
             <span class="button-row">${badge(order.status)}${badge(order.paymentStatus)}</span>
-            <span class="analytics-meta">${tableText}${notesText}<br>${new Date(order.createdAt).toLocaleString()} · ${money(order.totalPrice)}</span>
+            <span class="analytics-meta">${tableText}${notesText}<br>${new Date(order.createdAt).toLocaleString()} Ã‚- ${money(order.totalPrice)}</span>
           </span>
           <span class="analytics-value order-controls">
             <select class="status-select" aria-label="Order status" data-order-id="${order.id}">${options}</select>
@@ -230,6 +230,16 @@
     }
 
     function renderAnalyticsList(id, items, rowTemplate, emptyText, rowClass = ""){ const target = document.getElementById(id); target.innerHTML = ""; if (!items.length) { const empty = document.createElement("li"); empty.textContent = emptyText; target.appendChild(empty); return; } items.forEach(item => { const li = document.createElement("li"); if (rowClass) li.className = rowClass; li.innerHTML = rowTemplate(item); target.appendChild(li); }); }
+    function connectOrderEvents(){
+      if (!window.EventSource) return;
+      const events = new EventSource("/admin/events");
+      const handleOrderEvent = () => refreshAnalytics({ silent:true });
+      events.addEventListener("open", () => setLiveRefreshState("Live"));
+      events.addEventListener("order_created", handleOrderEvent);
+      events.addEventListener("order_updated", handleOrderEvent);
+      events.addEventListener("payment_updated", handleOrderEvent);
+      events.addEventListener("error", () => setLiveRefreshState("Reconnecting"));
+    }
     async function refreshAnalytics(options = {}){ if (analyticsRefreshing) return; if (document.activeElement && (document.activeElement.classList.contains("status-select") || document.activeElement.classList.contains("payment-select"))) return; analyticsRefreshing = true; setLiveRefreshState("Updating"); try { const response = await fetch("/admin/analytics"); if (!response.ok) return; const analytics = await response.json(); const params = new URLSearchParams(); if (currentOrderFilter) params.set("status", currentOrderFilter); if (currentPaymentFilter) params.set("paymentStatus", currentPaymentFilter); const ordersResponse = await fetch(`/admin/orders?${params.toString()}`); if (ordersResponse.ok) analytics.latestOrders = (await ordersResponse.json()).orders.slice(0, 8); renderAnalytics(analytics, options); setActiveFilters(); } finally { analyticsRefreshing = false; setLiveRefreshState("Live"); } }
     function bindOrderStatusControls(){ document.querySelectorAll(".status-select").forEach(select => { select.addEventListener("change", () => updateOrderStatus(select.dataset.orderId, select.value)); }); }
     function bindPaymentStatusControls(){ document.querySelectorAll(".payment-select").forEach(select => { select.addEventListener("change", () => updatePaymentStatus(select.dataset.orderId, select.value)); }); }
@@ -256,7 +266,7 @@
     document.getElementById("generate-qr").addEventListener("click", async () => { const tables = encodeURIComponent(document.getElementById("qr-count").value || 12); const response = await fetch(`/admin/qr-codes?tables=${tables}`); const data = await response.json(); renderOps((data.codes || []).map(code => `Table ${code.table}: ${code.url}`)); });
     document.querySelectorAll("[data-order-filter]").forEach(button => { button.addEventListener("click", () => { currentOrderFilter = button.dataset.orderFilter; refreshAnalytics({ silent:true }); }); });
     document.querySelectorAll("[data-payment-filter]").forEach(button => { button.addEventListener("click", () => { currentPaymentFilter = button.dataset.paymentFilter; refreshAnalytics({ silent:true }); }); });
-    renderMeals(); setActiveFilters(); loadSettings(); refreshSystem(); refreshAnalytics({ silent:true }); setInterval(() => refreshAnalytics(), 5000); document.addEventListener("visibilitychange", () => { if (!document.hidden) { refreshAnalytics({ silent:true }); refreshSystem(); } });
+    renderMeals(); setActiveFilters(); loadSettings(); refreshSystem(); connectOrderEvents(); refreshAnalytics({ silent:true }); setInterval(() => refreshAnalytics({ silent:true }), 30000); document.addEventListener("visibilitychange", () => { if (!document.hidden) { refreshAnalytics({ silent:true }); refreshSystem(); } });
   </script>
 </body>
 </html>

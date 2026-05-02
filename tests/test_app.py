@@ -193,6 +193,10 @@ class AdminMealManagementTestCase(DatabaseTestCase):
         self.assertEqual(order_response.status_code, 401)
         self.assertEqual(order_response.get_json()["error"], "Admin login required")
 
+        event_response = self.client.get("/admin/events")
+        self.assertEqual(event_response.status_code, 401)
+        self.assertEqual(event_response.get_json()["error"], "Admin login required")
+
     def test_admin_login_and_logout(self):
         bad_response = self.client.post("/admin/login", data={"password": "wrong"})
         self.assertEqual(bad_response.status_code, 200)
@@ -222,7 +226,8 @@ class AdminMealManagementTestCase(DatabaseTestCase):
         self.assertIn("data-payment-filter=", html)
         self.assertIn("updatePaymentStatus", html)
         self.assertIn("live-refresh-state", html)
-        self.assertIn("setInterval(() => refreshAnalytics(), 5000)", html)
+        self.assertIn("EventSource(\"/admin/events\")", html)
+        self.assertIn("setInterval(() => refreshAnalytics({ silent:true }), 30000)", html)
 
     def test_admin_can_add_update_and_delete_meal(self):
         new_meal = {
@@ -323,10 +328,15 @@ class NextLevelWorkflowTestCase(DatabaseTestCase):
         self.assertIn("totalPrice", order)
         tracking_response = self.client.get(order["trackingUrl"])
         self.assertEqual(tracking_response.status_code, 200)
-        self.assertIn(f"Order #{order['id']}", tracking_response.get_data(as_text=True))
+        tracking_html = tracking_response.get_data(as_text=True)
+        self.assertIn(f"Order #{order['id']}", tracking_html)
+        self.assertIn("EventSource('/orders/", tracking_html)
+        self.assertIn("/events')", tracking_html)
         status_response = self.client.get(f"/orders/{order['trackingToken']}")
         self.assertEqual(status_response.status_code, 200)
         self.assertEqual(status_response.get_json()["order"]["id"], order["id"])
+        missing_events = self.client.get("/orders/missing/events")
+        self.assertEqual(missing_events.status_code, 404)
 
     def test_qr_table_prefills_menu(self):
         response = self.client.get("/qr/12")
@@ -351,6 +361,7 @@ class NextLevelWorkflowTestCase(DatabaseTestCase):
         self.assertEqual(kitchen.status_code, 200)
         self.assertIn("Start Preparing", kitchen.get_data(as_text=True))
         self.assertIn("badge-paid", kitchen.get_data(as_text=True))
+        self.assertIn("EventSource(\"/admin/events\")", kitchen.get_data(as_text=True))
         active = self.client.get("/admin/orders?status=active")
         self.assertEqual(active.status_code, 200)
         self.assertEqual(active.get_json()["orders"][0]["status"], "new")
