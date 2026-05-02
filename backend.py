@@ -267,7 +267,12 @@ def create_schema(conn):
             status TEXT NOT NULL DEFAULT 'new',
             tracking_token TEXT NOT NULL DEFAULT '',
             unit_price REAL NOT NULL DEFAULT 0,
+            subtotal_price REAL NOT NULL DEFAULT 0,
+            tax_price REAL NOT NULL DEFAULT 0,
+            service_fee REAL NOT NULL DEFAULT 0,
             total_price REAL NOT NULL DEFAULT 0,
+            customer_name TEXT NOT NULL DEFAULT '',
+            customer_phone TEXT NOT NULL DEFAULT '',
             payment_status TEXT NOT NULL DEFAULT 'unpaid',
             created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
             updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
@@ -283,7 +288,12 @@ def create_schema(conn):
     ensure_column(conn, "orders", "updated_at", "TEXT NOT NULL DEFAULT ''")
     ensure_column(conn, "orders", "tracking_token", "TEXT NOT NULL DEFAULT ''")
     ensure_column(conn, "orders", "unit_price", "REAL NOT NULL DEFAULT 0")
+    ensure_column(conn, "orders", "subtotal_price", "REAL NOT NULL DEFAULT 0")
+    ensure_column(conn, "orders", "tax_price", "REAL NOT NULL DEFAULT 0")
+    ensure_column(conn, "orders", "service_fee", "REAL NOT NULL DEFAULT 0")
     ensure_column(conn, "orders", "total_price", "REAL NOT NULL DEFAULT 0")
+    ensure_column(conn, "orders", "customer_name", "TEXT NOT NULL DEFAULT ''")
+    ensure_column(conn, "orders", "customer_phone", "TEXT NOT NULL DEFAULT ''")
     ensure_column(conn, "orders", "payment_status", "TEXT NOT NULL DEFAULT 'unpaid'")
     conn.execute(
         """
@@ -415,11 +425,18 @@ def row_to_order(row, items=None):
     display_name = row["meal_name"]
     if len(items) > 1:
         display_name = f"{items[0]['mealName']} + {len(items) - 1} more"
+    subtotal_price = row_get(row, "subtotal_price", default=row["total_price"])
+    tax_price = row_get(row, "tax_price", default=0)
+    service_fee = row_get(row, "service_fee", default=0)
+    if (subtotal_price or 0) == 0 and (tax_price or 0) == 0 and (service_fee or 0) == 0 and (row["total_price"] or 0) > 0:
+        subtotal_price = row["total_price"]
     return {
         "id": row["id"],
         "mealName": display_name,
         "quantity": row["quantity"],
         "tableNumber": row["table_number"],
+        "customerName": row_get(row, "customer_name", default=""),
+        "customerPhone": row_get(row, "customer_phone", default=""),
         "notes": row["notes"],
         "status": row["status"],
         "createdAt": row["created_at"],
@@ -427,6 +444,9 @@ def row_to_order(row, items=None):
         "trackingToken": row["tracking_token"],
         "trackingUrl": order_tracking_url(row["tracking_token"]),
         "unitPrice": row["unit_price"],
+        "subtotalPrice": subtotal_price,
+        "taxPrice": tax_price,
+        "serviceFee": service_fee,
         "totalPrice": row["total_price"],
         "paymentStatus": row["payment_status"],
         "estimatedMinutes": estimate_prep_minutes(row["status"]),
@@ -627,7 +647,7 @@ def exportOrdersCsv():
     init_database()
     output = io.StringIO()
     writer = csv.writer(output)
-    writer.writerow(["id", "meal", "quantity", "table", "status", "payment_status", "total", "created_at", "tracking_token"])
+    writer.writerow(["id", "meal", "quantity", "table", "customer_name", "customer_phone", "status", "payment_status", "subtotal", "tax", "service_fee", "total", "created_at", "tracking_token"])
     with connect_db() as conn:
         rows = conn.execute("SELECT * FROM orders ORDER BY id DESC").fetchall()
     for row in rows:
@@ -636,8 +656,13 @@ def exportOrdersCsv():
             row["meal_name"],
             row["quantity"],
             row["table_number"],
+            row_get(row, "customer_name", default=""),
+            row_get(row, "customer_phone", default=""),
             row["status"],
             row["payment_status"],
+            row_get(row, "subtotal_price", default=row["total_price"]),
+            row_get(row, "tax_price", default=0),
+            row_get(row, "service_fee", default=0),
             row["total_price"],
             row["created_at"],
             row["tracking_token"],
@@ -785,6 +810,27 @@ def normalize_quantity(quantity):
     return normalized
 
 
+def parse_setting_number(value):
+    try:
+        return float(str(value or "0").replace("%", "").strip() or 0)
+    except ValueError:
+        return 0.0
+
+
+def calculate_order_totals(subtotal):
+    settings = getRestaurantSettings()
+    tax_rate = max(0.0, parse_setting_number(settings.get("taxRate")))
+    service_fee = max(0.0, parse_setting_number(settings.get("serviceFee")))
+    tax_price = round(subtotal * (tax_rate / 100), 2)
+    service_fee_price = round(service_fee, 2)
+    return {
+        "subtotalPrice": round(subtotal, 2),
+        "taxPrice": tax_price,
+        "serviceFee": service_fee_price,
+        "totalPrice": round(subtotal + tax_price + service_fee_price, 2),
+    }
+
+
 def normalize_order_items(items=None, meal_name=None, quantity=1, notes=""):
     if items is None:
         items = [{"mealName": meal_name, "quantity": quantity, "notes": notes}]
@@ -821,13 +867,16 @@ def normalize_order_items(items=None, meal_name=None, quantity=1, notes=""):
     return normalized
 
 
-def addOrder(meal_name=None, quantity=1, table_number="", notes="", items=None):
+def addOrder(meal_name=None, quantity=1, table_number="", notes="", items=None, customer_name="", customer_phone=""):
     init_database()
     normalized_items = normalize_order_items(items, meal_name, quantity, notes)
     table_number = str(table_number or "").strip()[:40]
     order_notes = str(notes or "").strip()[:240]
+    customer_name = str(customer_name or "").strip()[:80]
+    customer_phone = str(customer_phone or "").strip()[:40]
     total_quantity = sum(item["quantity"] for item in normalized_items)
-    total_price = round(sum(item["totalPrice"] for item in normalized_items), 2)
+    subtotal_price = round(sum(item["totalPrice"] for item in normalized_items), 2)
+    totals = calculate_order_totals(subtotal_price)
     first_item = normalized_items[0]
     display_name = first_item["mealName"] if len(normalized_items) == 1 else f"{first_item['mealName']} + {len(normalized_items) - 1} more"
     unit_price = first_item["unitPrice"] if len(normalized_items) == 1 else 0
@@ -837,14 +886,14 @@ def addOrder(meal_name=None, quantity=1, table_number="", notes="", items=None):
         insert_order_sql = """
             INSERT INTO orders (
                 meal_name, quantity, table_number, notes, status,
-                tracking_token, unit_price, total_price, payment_status, created_at, updated_at
-            ) VALUES (?, ?, ?, ?, 'new', ?, ?, ?, 'unpaid', ?, ?)
+                tracking_token, unit_price, subtotal_price, tax_price, service_fee, total_price, customer_name, customer_phone, payment_status, created_at, updated_at
+            ) VALUES (?, ?, ?, ?, 'new', ?, ?, ?, ?, ?, ?, ?, ?, 'unpaid', ?, ?)
             """
         if getattr(conn, "is_postgres", False):
             insert_order_sql += " RETURNING id"
         cursor = conn.execute(
             insert_order_sql,
-            (display_name, total_quantity, table_number, order_notes, token, unit_price, total_price, created_at, created_at),
+            (display_name, total_quantity, table_number, order_notes, token, unit_price, totals["subtotalPrice"], totals["taxPrice"], totals["serviceFee"], totals["totalPrice"], customer_name, customer_phone, created_at, created_at),
         )
         order_id = cursor.fetchone()["id"] if getattr(conn, "is_postgres", False) else cursor.lastrowid
         for item in normalized_items:

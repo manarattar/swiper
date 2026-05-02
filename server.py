@@ -338,6 +338,8 @@ def create_order():
             table_number=data.get("tableNumber", ""),
             notes=data.get("notes", ""),
             items=data.get("items"),
+            customer_name=data.get("customerName", ""),
+            customer_phone=data.get("customerPhone", ""),
         )
     except ValueError as exc:
         return jsonify({"error": str(exc)}), 400
@@ -434,6 +436,14 @@ def admin_update_settings():
 def dietary_filters():
     filters = setDietaryFilters(request.get_json() or {})
     return jsonify({"filters": filters, "meals": filteredMeals(filters)})
+
+
+@app.route("/order-confirmation/<token>")
+def order_confirmation(token):
+    order = getOrderByToken(token)
+    if order is None:
+        return render_template("error.html", status_code=404, title="Order Not Found", message="This confirmation link does not match an order."), 404
+    return render_template("order_confirmation.html", order=order)
 
 
 @app.route("/order/<token>")

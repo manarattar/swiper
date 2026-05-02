@@ -409,6 +409,46 @@ class FinalUpgradeTestCase(DatabaseTestCase):
         self.assertEqual(qr.get_json()["codes"][0]["url"], "/qr/1")
 
 
+    def test_professional_checkout_totals_contact_and_confirmation(self):
+        self.login_admin()
+        self.client.put("/admin/settings", json={"taxRate": "10", "serviceFee": "2.50"})
+
+        response = self.client.post("/orders", json={
+            "tableNumber": "8",
+            "customerName": "Mina",
+            "customerPhone": "555-0100",
+            "notes": "window table",
+            "items": [{"mealName": "Currywurst", "quantity": 2, "notes": "extra sauce"}],
+        })
+
+        self.assertEqual(response.status_code, 201)
+        order = response.get_json()["order"]
+        self.assertEqual(order["customerName"], "Mina")
+        self.assertEqual(order["customerPhone"], "555-0100")
+        self.assertEqual(order["subtotalPrice"], 19.0)
+        self.assertEqual(order["taxPrice"], 1.9)
+        self.assertEqual(order["serviceFee"], 2.5)
+        self.assertEqual(order["totalPrice"], 23.4)
+
+        confirmation = self.client.get(f"/order-confirmation/{order['trackingToken']}")
+        self.assertEqual(confirmation.status_code, 200)
+        confirmation_html = confirmation.get_data(as_text=True)
+        self.assertIn("Order Received", confirmation_html)
+        self.assertIn("Mina", confirmation_html)
+        self.assertIn("$23.40", confirmation_html)
+
+        tracking = self.client.get(order["trackingUrl"]).get_data(as_text=True)
+        self.assertIn("timeline", tracking)
+        self.assertIn("Mina", tracking)
+
+    def test_menu_has_editable_review_checkout(self):
+        menu = self.client.get("/menu").get_data(as_text=True)
+        self.assertIn("review-modal", menu)
+        self.assertIn("data-cart-qty", menu)
+        self.assertIn("data-cart-remove", menu)
+        self.assertIn("customer-name", menu)
+        self.assertIn("place-order-button", menu)
+
     def test_security_headers_are_applied(self):
         response = self.client.get("/menu", headers={"X-Forwarded-Proto": "https"})
         self.assertEqual(response.status_code, 200)
