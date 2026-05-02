@@ -95,6 +95,11 @@ class SwipeEatTestCase(DatabaseTestCase):
         self.assertEqual(response.status_code, 200)
         self.assertIn("Currywurst", html)
         self.assertIn("Fettuccine Alfredo", html)
+        self.assertIn("Cart is empty", html)
+        self.assertIn("meal-modal", html)
+        self.assertIn("category-tabs", html)
+        self.assertIn("checkout-button", html)
+        self.assertIn("pairSuggestions", html)
         self.assertIn("{{ meals|tojson }}", template)
 
     def test_restart_resets_session(self):
@@ -303,6 +308,8 @@ class NextLevelWorkflowTestCase(DatabaseTestCase):
         self.assertIn("/menu?table=12", response.headers["Location"])
         menu = self.client.get("/menu?table=12").get_data(as_text=True)
         self.assertIn('value="12"', menu)
+        self.assertIn("Table 12", menu)
+        self.assertIn("Ordering for Table", menu)
 
     def test_dietary_filters_reduce_available_meals(self):
         response = self.client.post("/dietary-filters", json={"halal": True})
