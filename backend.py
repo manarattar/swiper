@@ -295,6 +295,8 @@ def create_schema(conn):
     ensure_column(conn, "orders", "customer_name", "TEXT NOT NULL DEFAULT ''")
     ensure_column(conn, "orders", "customer_phone", "TEXT NOT NULL DEFAULT ''")
     ensure_column(conn, "orders", "payment_status", "TEXT NOT NULL DEFAULT 'unpaid'")
+    ensure_column(conn, "orders", "estimated_minutes", "INTEGER NOT NULL DEFAULT 12")
+    ensure_column(conn, "orders", "status_started_at", "TEXT NOT NULL DEFAULT ''")
     conn.execute(
         """
         CREATE TABLE IF NOT EXISTS order_items (
@@ -314,6 +316,27 @@ def create_schema(conn):
         """
         CREATE INDEX IF NOT EXISTS idx_order_items_order_id
         ON order_items(order_id)
+        """
+    )
+    conn.execute(
+        """
+        CREATE TABLE IF NOT EXISTS order_history (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            order_id INTEGER NOT NULL,
+            action TEXT NOT NULL,
+            from_value TEXT NOT NULL DEFAULT '',
+            to_value TEXT NOT NULL DEFAULT '',
+            actor TEXT NOT NULL DEFAULT 'system',
+            note TEXT NOT NULL DEFAULT '',
+            created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+            FOREIGN KEY(order_id) REFERENCES orders(id) ON DELETE CASCADE
+        )
+        """
+    )
+    conn.execute(
+        """
+        CREATE INDEX IF NOT EXISTS idx_order_history_order_id
+        ON order_history(order_id)
         """
     )
     conn.execute(
@@ -420,6 +443,42 @@ def row_to_meal(row):
     }
 
 
+def parse_timestamp(value):
+    if isinstance(value, datetime):
+        parsed = value
+    else:
+        text = str(value or "").strip()
+        if not text:
+            return None
+        try:
+            parsed = datetime.fromisoformat(text.replace("Z", "+00:00"))
+        except ValueError:
+            return None
+    if parsed.tzinfo is None:
+        parsed = parsed.replace(tzinfo=timezone.utc)
+    return parsed.astimezone(timezone.utc)
+
+
+def minutes_since(value):
+    parsed = parse_timestamp(value)
+    if parsed is None:
+        return 0
+    return max(0, int((datetime.now(timezone.utc) - parsed).total_seconds() // 60))
+
+
+def row_to_order_history(row):
+    return {
+        "id": row["id"],
+        "orderId": row["order_id"],
+        "action": row["action"],
+        "fromValue": row_get(row, "from_value", default=""),
+        "toValue": row_get(row, "to_value", default=""),
+        "actor": row_get(row, "actor", default="system"),
+        "note": row_get(row, "note", default=""),
+        "createdAt": row["created_at"],
+    }
+
+
 def row_to_order(row, items=None):
     items = items or []
     display_name = row["meal_name"]
@@ -430,6 +489,12 @@ def row_to_order(row, items=None):
     service_fee = row_get(row, "service_fee", default=0)
     if (subtotal_price or 0) == 0 and (tax_price or 0) == 0 and (service_fee or 0) == 0 and (row["total_price"] or 0) > 0:
         subtotal_price = row["total_price"]
+    estimated_minutes = int(row_get(row, "estimated_minutes", default=estimate_prep_minutes(row["status"])) or 0)
+    if row["status"] in ("completed", "cancelled"):
+        estimated_minutes = 0
+    status_started_at = row_get(row, "status_started_at", default=row["created_at"]) or row["created_at"]
+    elapsed_minutes = minutes_since(row["created_at"])
+    status_age_minutes = minutes_since(status_started_at)
     return {
         "id": row["id"],
         "mealName": display_name,
@@ -449,7 +514,11 @@ def row_to_order(row, items=None):
         "serviceFee": service_fee,
         "totalPrice": row["total_price"],
         "paymentStatus": row["payment_status"],
-        "estimatedMinutes": estimate_prep_minutes(row["status"]),
+        "estimatedMinutes": estimated_minutes,
+        "statusStartedAt": status_started_at,
+        "elapsedMinutes": elapsed_minutes,
+        "statusAgeMinutes": status_age_minutes,
+        "isDelayed": row["status"] in ("new", "preparing") and status_age_minutes > max(estimated_minutes, 1),
         "items": items,
         "itemCount": len(items) if items else 1,
     }
@@ -493,10 +562,11 @@ def init_database(db_path=None, reset=False):
             conn.execute("DELETE FROM meals")
             conn.execute("DELETE FROM admin_users")
             conn.execute("DELETE FROM app_events")
+            conn.execute("DELETE FROM order_history")
             conn.execute("DELETE FROM restaurant_settings")
             conn.execute("DELETE FROM schema_migrations WHERE version != ?", (SCHEMA_VERSION,))
             if not getattr(conn, "is_postgres", False):
-                conn.execute("DELETE FROM sqlite_sequence WHERE name IN ('meals', 'orders', 'order_items', 'swipes', 'admin_users', 'app_events')")
+                conn.execute("DELETE FROM sqlite_sequence WHERE name IN ('meals', 'orders', 'order_items', 'order_history', 'swipes', 'admin_users', 'app_events')")
             conn.commit()
         seed_if_empty(conn)
 
@@ -800,6 +870,30 @@ def getOrderItems(conn, order_id):
     ).fetchall()
     return [row_to_order_item(row) for row in rows]
 
+def recordOrderHistory(conn, order_id, action, from_value="", to_value="", actor="system", note=""):
+    conn.execute(
+        """
+        INSERT INTO order_history (order_id, action, from_value, to_value, actor, note, created_at)
+        VALUES (?, ?, ?, ?, ?, ?, ?)
+        """,
+        (order_id, str(action or "")[:40], str(from_value or "")[:80], str(to_value or "")[:80], str(actor or "system")[:80], str(note or "")[:240], datetime.now(timezone.utc).isoformat()),
+    )
+
+
+def getOrderHistory(conn, order_id):
+    rows = conn.execute(
+        """
+        SELECT id, order_id, action, from_value, to_value, actor, note, created_at
+        FROM order_history
+        WHERE order_id = ?
+        ORDER BY id DESC
+        LIMIT 20
+        """,
+        (order_id,),
+    ).fetchall()
+    return [row_to_order_history(row) for row in rows]
+
+
 def normalize_quantity(quantity):
     try:
         normalized = int(quantity)
@@ -886,16 +980,17 @@ def addOrder(meal_name=None, quantity=1, table_number="", notes="", items=None, 
         insert_order_sql = """
             INSERT INTO orders (
                 meal_name, quantity, table_number, notes, status,
-                tracking_token, unit_price, subtotal_price, tax_price, service_fee, total_price, customer_name, customer_phone, payment_status, created_at, updated_at
-            ) VALUES (?, ?, ?, ?, 'new', ?, ?, ?, ?, ?, ?, ?, ?, 'unpaid', ?, ?)
+                tracking_token, unit_price, subtotal_price, tax_price, service_fee, total_price, customer_name, customer_phone, payment_status, estimated_minutes, status_started_at, created_at, updated_at
+            ) VALUES (?, ?, ?, ?, 'new', ?, ?, ?, ?, ?, ?, ?, ?, 'unpaid', ?, ?, ?, ?)
             """
         if getattr(conn, "is_postgres", False):
             insert_order_sql += " RETURNING id"
         cursor = conn.execute(
             insert_order_sql,
-            (display_name, total_quantity, table_number, order_notes, token, unit_price, totals["subtotalPrice"], totals["taxPrice"], totals["serviceFee"], totals["totalPrice"], customer_name, customer_phone, created_at, created_at),
+            (display_name, total_quantity, table_number, order_notes, token, unit_price, totals["subtotalPrice"], totals["taxPrice"], totals["serviceFee"], totals["totalPrice"], customer_name, customer_phone, estimate_prep_minutes("new"), created_at, created_at, created_at),
         )
         order_id = cursor.fetchone()["id"] if getattr(conn, "is_postgres", False) else cursor.lastrowid
+        recordOrderHistory(conn, order_id, "created", "", "new", "customer", "Order placed")
         for item in normalized_items:
             conn.execute(
                 """
@@ -922,8 +1017,11 @@ def getOrderById(order_id):
     with connect_db() as conn:
         row = conn.execute("SELECT * FROM orders WHERE id = ?", (order_id,)).fetchone()
         items = getOrderItems(conn, order_id) if row else []
-    return row_to_order(row, items) if row else None
-
+        history = getOrderHistory(conn, order_id) if row else []
+    order = row_to_order(row, items) if row else None
+    if order is not None:
+        order["history"] = history
+    return order
 
 
 def getOrderByToken(token):
@@ -931,7 +1029,11 @@ def getOrderByToken(token):
     with connect_db() as conn:
         row = conn.execute("SELECT * FROM orders WHERE tracking_token = ?", (str(token or "").strip(),)).fetchone()
         items = getOrderItems(conn, row["id"]) if row else []
-    return row_to_order(row, items) if row else None
+        history = getOrderHistory(conn, row["id"]) if row else []
+    order = row_to_order(row, items) if row else None
+    if order is not None:
+        order["history"] = history
+    return order
 def getOrders(limit=None, status=None, payment_status=None):
     init_database()
     query = "SELECT * FROM orders"
@@ -959,7 +1061,12 @@ def getOrders(limit=None, status=None, payment_status=None):
         params.append(limit)
     with connect_db() as conn:
         rows = conn.execute(query, params).fetchall()
-        return [row_to_order(row, getOrderItems(conn, row["id"])) for row in rows]
+        orders = []
+        for row in rows:
+            order = row_to_order(row, getOrderItems(conn, row["id"]))
+            order["history"] = getOrderHistory(conn, row["id"])
+            orders.append(order)
+        return orders
 
 
 def estimate_prep_minutes(status):
@@ -972,17 +1079,22 @@ def estimate_prep_minutes(status):
     return 12
 
 
-def updateOrderPaymentStatus(order_id, payment_status):
+def updateOrderPaymentStatus(order_id, payment_status, actor="admin"):
     init_database()
     payment_status = str(payment_status or "").strip().lower()
     if payment_status not in VALID_PAYMENT_STATUSES:
         raise ValueError(f"Invalid payment status: {payment_status}")
     updated_at = datetime.now(timezone.utc).isoformat()
     with connect_db() as conn:
+        existing = conn.execute("SELECT payment_status FROM orders WHERE id = ?", (order_id,)).fetchone()
+        if existing is None:
+            raise ValueError(f"Order not found: {order_id}")
         cursor = conn.execute(
             "UPDATE orders SET payment_status = ?, updated_at = ? WHERE id = ?",
             (payment_status, updated_at, order_id),
         )
+        if existing["payment_status"] != payment_status:
+            recordOrderHistory(conn, order_id, "payment", existing["payment_status"], payment_status, actor, "Payment status changed")
         conn.commit()
     if cursor.rowcount == 0:
         raise ValueError(f"Order not found: {order_id}")
@@ -1019,7 +1131,12 @@ def searchOrders(term="", status=None, payment_status=None, limit=50):
     params.append(limit)
     with connect_db() as conn:
         rows = conn.execute(query, params).fetchall()
-        return [row_to_order(row, getOrderItems(conn, row["id"])) for row in rows]
+        orders = []
+        for row in rows:
+            order = row_to_order(row, getOrderItems(conn, row["id"]))
+            order["history"] = getOrderHistory(conn, row["id"])
+            orders.append(order)
+        return orders
 
 
 def getInventorySummary():
@@ -1031,17 +1148,53 @@ def getInventorySummary():
         "meals": meals,
     }
 
-def updateOrderStatus(order_id, status):
+def updateOrderStatus(order_id, status, actor="admin"):
     init_database()
     status = str(status or "").strip().lower()
     if status not in VALID_ORDER_STATUSES:
         raise ValueError(f"Invalid order status: {status}")
     updated_at = datetime.now(timezone.utc).isoformat()
     with connect_db() as conn:
+        existing = conn.execute("SELECT status, estimated_minutes FROM orders WHERE id = ?", (order_id,)).fetchone()
+        if existing is None:
+            raise ValueError(f"Order not found: {order_id}")
+        estimated_minutes = 0 if status in ("completed", "cancelled") else int(row_get(existing, "estimated_minutes", default=estimate_prep_minutes(status)) or estimate_prep_minutes(status))
+        if existing["status"] == status:
+            cursor = conn.execute(
+                "UPDATE orders SET status = ?, estimated_minutes = ?, updated_at = ? WHERE id = ?",
+                (status, estimated_minutes, updated_at, order_id),
+            )
+        else:
+            cursor = conn.execute(
+                "UPDATE orders SET status = ?, estimated_minutes = ?, status_started_at = ?, updated_at = ? WHERE id = ?",
+                (status, estimated_minutes, updated_at, updated_at, order_id),
+            )
+            recordOrderHistory(conn, order_id, "status", existing["status"], status, actor, "Order status changed")
+        conn.commit()
+    if cursor.rowcount == 0:
+        raise ValueError(f"Order not found: {order_id}")
+    return getOrderById(order_id)
+
+
+def updateOrderEta(order_id, estimated_minutes, actor="admin"):
+    init_database()
+    try:
+        estimated_minutes = int(estimated_minutes)
+    except (TypeError, ValueError):
+        raise ValueError("ETA must be a number")
+    if estimated_minutes < 0 or estimated_minutes > 180:
+        raise ValueError("ETA must be between 0 and 180 minutes")
+    updated_at = datetime.now(timezone.utc).isoformat()
+    with connect_db() as conn:
+        existing = conn.execute("SELECT estimated_minutes FROM orders WHERE id = ?", (order_id,)).fetchone()
+        if existing is None:
+            raise ValueError(f"Order not found: {order_id}")
         cursor = conn.execute(
-            "UPDATE orders SET status = ?, updated_at = ? WHERE id = ?",
-            (status, updated_at, order_id),
+            "UPDATE orders SET estimated_minutes = ?, updated_at = ? WHERE id = ?",
+            (estimated_minutes, updated_at, order_id),
         )
+        if int(row_get(existing, "estimated_minutes", default=0) or 0) != estimated_minutes:
+            recordOrderHistory(conn, order_id, "eta", row_get(existing, "estimated_minutes", default=""), estimated_minutes, actor, "ETA changed")
         conn.commit()
     if cursor.rowcount == 0:
         raise ValueError(f"Order not found: {order_id}")

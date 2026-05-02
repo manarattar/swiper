@@ -228,6 +228,10 @@ class AdminMealManagementTestCase(DatabaseTestCase):
         self.assertIn("live-refresh-state", html)
         self.assertIn("EventSource(\"/admin/events\")", html)
         self.assertIn("setInterval(() => refreshAnalytics({ silent:true }), 30000)", html)
+        self.assertIn("notification-events", html)
+        self.assertIn("eta-input", html)
+        self.assertIn("updateOrderEta", html)
+        self.assertIn("eta_updated", html)
 
     def test_admin_can_add_update_and_delete_meal(self):
         new_meal = {
@@ -332,6 +336,7 @@ class NextLevelWorkflowTestCase(DatabaseTestCase):
         self.assertIn(f"Order #{order['id']}", tracking_html)
         self.assertIn("EventSource('/orders/", tracking_html)
         self.assertIn("/events')", tracking_html)
+        self.assertIn("eta_updated", tracking_html)
         status_response = self.client.get(f"/orders/{order['trackingToken']}")
         self.assertEqual(status_response.status_code, 200)
         self.assertEqual(status_response.get_json()["order"]["id"], order["id"])
@@ -362,6 +367,8 @@ class NextLevelWorkflowTestCase(DatabaseTestCase):
         self.assertIn("Start Preparing", kitchen.get_data(as_text=True))
         self.assertIn("badge-paid", kitchen.get_data(as_text=True))
         self.assertIn("EventSource(\"/admin/events\")", kitchen.get_data(as_text=True))
+        self.assertIn("Update ETA", kitchen.get_data(as_text=True))
+        self.assertIn("eta_updated", kitchen.get_data(as_text=True))
         active = self.client.get("/admin/orders?status=active")
         self.assertEqual(active.status_code, 200)
         self.assertEqual(active.get_json()["orders"][0]["status"], "new")
@@ -393,6 +400,22 @@ class FinalUpgradeTestCase(DatabaseTestCase):
         response = self.client.put(f"/admin/orders/{order['id']}/payment", json={"paymentStatus": "paid"})
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response.get_json()["order"]["paymentStatus"], "paid")
+
+    def test_admin_can_update_order_eta_and_records_history(self):
+        order = self.client.post("/orders", json={"mealName": "Currywurst"}).get_json()["order"]
+        self.assertIn("statusAgeMinutes", order)
+        self.assertEqual(order["history"][0]["action"], "created")
+        self.login_admin()
+        eta_response = self.client.put(f"/admin/orders/{order['id']}/eta", json={"estimatedMinutes": 18})
+        self.assertEqual(eta_response.status_code, 200)
+        updated = eta_response.get_json()["order"]
+        self.assertEqual(updated["estimatedMinutes"], 18)
+        self.assertEqual(updated["history"][0]["action"], "eta")
+        self.assertEqual(updated["history"][0]["toValue"], "18")
+        status_response = self.client.put(f"/admin/orders/{order['id']}", json={"status": "preparing"})
+        self.assertEqual(status_response.status_code, 200)
+        self.assertEqual(status_response.get_json()["order"]["history"][0]["action"], "status")
+
 
     def test_admin_search_inventory_and_qr_generator(self):
         self.client.post("/orders", json={"mealName": "Currywurst", "tableNumber": "9"})

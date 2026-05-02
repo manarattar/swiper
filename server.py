@@ -37,6 +37,7 @@ from backend import (
     setDietaryFilters,
     updateMeal,
     updateMealRecord,
+    updateOrderEta,
     updateOrderPaymentStatus,
     updateOrderStatus,
     updateRestaurantSettings,
@@ -375,10 +376,11 @@ def admin_analytics():
 def admin_update_order(order_id):
     data = request.get_json() or {}
     try:
-        order = updateOrderStatus(order_id, data.get("status"))
+        order = updateOrderStatus(order_id, data.get("status"), actor=current_admin()["username"])
     except ValueError as exc:
         return jsonify({"error": str(exc)}), 400
     logger.info("Admin %s marked order %s as %s", current_admin()["username"], order_id, order["status"])
+    recordAppEvent("info", "orders", f"Order #{order_id} marked {order['status']}", request.path)
     publish_order_event("order_updated", order)
     return jsonify({"order": order})
 
@@ -406,6 +408,7 @@ def create_order():
     history.insert(0, order["trackingToken"])
     session["orderHistory"] = history[:10]
     logger.info("Order %s created for %s", order["id"], order["mealName"])
+    recordAppEvent("info", "orders", f"New order #{order['id']} received", request.path)
     publish_order_event("order_created", order)
     return jsonify({"order": order}), 201
 
@@ -422,13 +425,28 @@ def order_history():
 def admin_update_order_payment(order_id):
     data = request.get_json() or {}
     try:
-        order = updateOrderPaymentStatus(order_id, data.get("paymentStatus"))
+        order = updateOrderPaymentStatus(order_id, data.get("paymentStatus"), actor=current_admin()["username"])
     except ValueError as exc:
         return jsonify({"error": str(exc)}), 400
     logger.info("Admin %s marked order %s payment as %s", current_admin()["username"], order_id, order["paymentStatus"])
+    recordAppEvent("info", "payments", f"Order #{order_id} payment marked {order['paymentStatus']}", request.path)
     publish_order_event("payment_updated", order)
     return jsonify({"order": order})
 
+
+
+@app.route("/admin/orders/<int:order_id>/eta", methods=["PUT"])
+@admin_required
+def admin_update_order_eta(order_id):
+    data = request.get_json() or {}
+    try:
+        order = updateOrderEta(order_id, data.get("estimatedMinutes"), actor=current_admin()["username"])
+    except ValueError as exc:
+        return jsonify({"error": str(exc)}), 400
+    logger.info("Admin %s set order %s ETA to %s minutes", current_admin()["username"], order_id, order["estimatedMinutes"])
+    recordAppEvent("info", "orders", f"Order #{order_id} ETA set to {order['estimatedMinutes']} minutes", request.path)
+    publish_order_event("eta_updated", order)
+    return jsonify({"order": order})
 
 @app.route("/admin/orders/search", methods=["GET"])
 @admin_required
