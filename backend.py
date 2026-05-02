@@ -54,6 +54,8 @@ DEFAULT_RESTAURANT_SETTINGS = {
     "currency": "$",
     "taxRate": "0",
     "serviceFee": "0",
+    "acceptingOrders": "true",
+    "busyMessage": "Online ordering is paused right now. Please try again soon.",
 }
 
 
@@ -538,6 +540,16 @@ def getRestaurantSettings():
     return settings
 
 
+def restaurantAcceptsOrders():
+    settings = getRestaurantSettings()
+    return str(settings.get("acceptingOrders", "true")).strip().lower() in {"1", "true", "yes", "on"}
+
+
+def getOrderingPauseMessage():
+    settings = getRestaurantSettings()
+    return settings.get("busyMessage") or "Online ordering is paused right now. Please try again soon."
+
+
 def updateRestaurantSettings(updates):
     init_database()
     allowed = set(DEFAULT_RESTAURANT_SETTINGS)
@@ -549,6 +561,10 @@ def updateRestaurantSettings(updates):
         raise ValueError("Restaurant name is required")
     if "currency" in cleaned:
         cleaned["currency"] = cleaned["currency"][:4] or "$"
+    if "acceptingOrders" in cleaned:
+        cleaned["acceptingOrders"] = "true" if str(cleaned["acceptingOrders"]).lower() in {"1", "true", "yes", "on"} else "false"
+    if "busyMessage" in cleaned and not cleaned["busyMessage"]:
+        cleaned["busyMessage"] = DEFAULT_RESTAURANT_SETTINGS["busyMessage"]
     updated_at = datetime.now(timezone.utc).isoformat()
     with connect_db() as conn:
         for key, value in cleaned.items():

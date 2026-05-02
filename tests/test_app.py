@@ -409,6 +409,34 @@ class FinalUpgradeTestCase(DatabaseTestCase):
         self.assertEqual(qr.get_json()["codes"][0]["url"], "/qr/1")
 
 
+    def test_security_headers_are_applied(self):
+        response = self.client.get("/menu", headers={"X-Forwarded-Proto": "https"})
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.headers["X-Content-Type-Options"], "nosniff")
+        self.assertEqual(response.headers["X-Frame-Options"], "DENY")
+        self.assertIn("Strict-Transport-Security", response.headers)
+
+        self.login_admin()
+        admin = self.client.get("/admin")
+        self.assertEqual(admin.headers["Cache-Control"], "no-store")
+
+    def test_accepting_orders_toggle_blocks_customer_orders(self):
+        self.login_admin()
+        update = self.client.put("/admin/settings", json={
+            "acceptingOrders": False,
+            "busyMessage": "We are closed for prep.",
+        })
+        self.assertEqual(update.status_code, 200)
+        self.assertEqual(update.get_json()["settings"]["acceptingOrders"], "false")
+
+        response = self.client.post("/orders", json={"mealName": "Currywurst"})
+        self.assertEqual(response.status_code, 403)
+        self.assertIn("closed for prep", response.get_json()["error"])
+
+        menu = self.client.get("/menu").get_data(as_text=True)
+        self.assertIn("We are closed for prep.", menu)
+        self.assertIn("Ordering Paused", menu)
+
     def test_restaurant_settings_monitoring_and_connected_cart_ui(self):
         self.login_admin()
         update = self.client.put("/admin/settings", json={
@@ -416,6 +444,8 @@ class FinalUpgradeTestCase(DatabaseTestCase):
             "tagline": "Order your favorites fast.",
             "currency": "?",
             "openingHours": "10-22",
+            "acceptingOrders": True,
+            "busyMessage": "Paused for a private event.",
         })
         self.assertEqual(update.status_code, 200)
         self.assertEqual(update.get_json()["settings"]["restaurantName"], "Manar Kitchen")
@@ -423,11 +453,14 @@ class FinalUpgradeTestCase(DatabaseTestCase):
         settings = self.client.get("/admin/settings")
         self.assertEqual(settings.status_code, 200)
         self.assertEqual(settings.get_json()["settings"]["currency"], "?")
+        self.assertEqual(settings.get_json()["settings"]["acceptingOrders"], "true")
+        self.assertEqual(settings.get_json()["settings"]["busyMessage"], "Paused for a private event.")
 
         system = self.client.get("/admin/system")
         self.assertEqual(system.status_code, 200)
         self.assertEqual(system.get_json()["status"], "ok")
         self.assertIn("recentEvents", system.get_json())
+        self.assertIn("warnings", system.get_json())
 
         menu = self.client.get("/menu").get_data(as_text=True)
         self.assertIn("Manar Kitchen Menu", menu)

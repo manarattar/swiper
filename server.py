@@ -1,6 +1,8 @@
 import logging
 import os
 import secrets
+import time
+from collections import defaultdict, deque
 from functools import wraps
 
 from flask import Flask, Response, jsonify, redirect, render_template, request, session, url_for
@@ -20,6 +22,7 @@ from backend import (
     getOrderByToken,
     getProductionStatus,
     getRestaurantSettings,
+    getOrderingPauseMessage,
     getOrders,
     getProgress,
     getSchemaMigrations,
@@ -27,6 +30,7 @@ from backend import (
     nextMeal,
     resetState,
     recordAppEvent,
+    restaurantAcceptsOrders,
     searchOrders,
     setDietaryFilters,
     updateMeal,
@@ -40,11 +44,13 @@ app = Flask(__name__)
 app.secret_key = os.environ.get("SECRET_KEY", "dev-secret-key-change-me")
 app.config["SESSION_COOKIE_HTTPONLY"] = True
 app.config["SESSION_COOKIE_SAMESITE"] = "Lax"
+app.config["SESSION_COOKIE_SECURE"] = os.environ.get("SESSION_COOKIE_SECURE", "true").lower() != "false"
 app.config["ADMIN_USERNAME"] = os.environ.get("ADMIN_USERNAME", "admin")
 app.config["ADMIN_PASSWORD"] = os.environ.get("ADMIN_PASSWORD", "admin")
 app.config["CSRF_ENABLED"] = os.environ.get("CSRF_ENABLED", "true").lower() != "false"
 logging.basicConfig(level=os.environ.get("LOG_LEVEL", "INFO"))
 logger = logging.getLogger(__name__)
+RATE_LIMITS = defaultdict(deque)
 
 
 def is_admin_authenticated():
@@ -57,6 +63,38 @@ def current_admin():
 
 def wants_json_response():
     return request.path.startswith(("/admin/", "/orders", "/dietary-filters", "/handle_swipe", "/go_back", "/get_current_meal"))
+
+
+def client_ip():
+    forwarded_for = request.headers.get("X-Forwarded-For", "")
+    if forwarded_for:
+        return forwarded_for.split(",")[0].strip()
+    return request.remote_addr or "unknown"
+
+
+def rate_limited(bucket, limit, window_seconds):
+    now = time.time()
+    key = f"{bucket}:{client_ip()}"
+    hits = RATE_LIMITS[key]
+    while hits and now - hits[0] > window_seconds:
+        hits.popleft()
+    if len(hits) >= limit:
+        return True
+    hits.append(now)
+    return False
+
+
+def production_warnings():
+    warnings = []
+    if app.secret_key == "dev-secret-key-change-me":
+        warnings.append("SECRET_KEY is using the development fallback")
+    if app.config["ADMIN_PASSWORD"] == "admin":
+        warnings.append("ADMIN_PASSWORD is using the development fallback")
+    if not app.config.get("SESSION_COOKIE_SECURE"):
+        warnings.append("SESSION_COOKIE_SECURE is disabled")
+    if not app.config.get("CSRF_ENABLED"):
+        warnings.append("CSRF protection is disabled")
+    return warnings
 
 
 def csrf_token():
@@ -75,6 +113,20 @@ def csrf_is_valid():
 @app.context_processor
 def inject_security_helpers():
     return {"csrf_token": csrf_token, "current_admin": current_admin, "restaurant_settings": getRestaurantSettings()}
+
+
+@app.after_request
+def add_security_headers(response):
+    response.headers.setdefault("X-Content-Type-Options", "nosniff")
+    response.headers.setdefault("X-Frame-Options", "DENY")
+    response.headers.setdefault("Referrer-Policy", "strict-origin-when-cross-origin")
+    response.headers.setdefault("Permissions-Policy", "camera=(), microphone=(), geolocation=()")
+    response.headers.setdefault("Content-Security-Policy", "default-src 'self'; img-src 'self' data: https:; style-src 'self' 'unsafe-inline' https://cdnjs.cloudflare.com; script-src 'self' 'unsafe-inline'; font-src 'self' https://cdnjs.cloudflare.com; connect-src 'self'; frame-ancestors 'none'")
+    if request.is_secure or request.headers.get("X-Forwarded-Proto") == "https":
+        response.headers.setdefault("Strict-Transport-Security", "max-age=31536000; includeSubDomains")
+    if request.path.startswith(("/admin", "/kitchen")):
+        response.headers.setdefault("Cache-Control", "no-store")
+    return response
 
 
 @app.before_request
@@ -147,8 +199,8 @@ def admin_login():
         username = request.form.get("username", app.config["ADMIN_USERNAME"])
         password = request.form.get("password", "")
         next_url = safe_next_url(request.form.get("next") or url_for("admin"))
-        if session.get("admin_login_attempts", 0) >= 5:
-            error = "Too many login attempts. Restart your browser session."
+        if session.get("admin_login_attempts", 0) >= 5 or (not app.config.get("TESTING") and rate_limited("admin-login", 6, 900)):
+            error = "Too many login attempts. Please wait a few minutes."
         else:
             admin_user = authenticateAdmin(username, password, fallback_password=app.config["ADMIN_PASSWORD"])
             if admin_user:
@@ -274,6 +326,10 @@ def admin_update_order(order_id):
 
 @app.route("/orders", methods=["POST"])
 def create_order():
+    if not app.config.get("TESTING") and rate_limited("orders", 20, 600):
+        return jsonify({"error": "Too many order attempts. Please wait a few minutes."}), 429
+    if not restaurantAcceptsOrders():
+        return jsonify({"error": getOrderingPauseMessage()}), 403
     data = request.get_json() or {}
     try:
         order = addOrder(
@@ -353,6 +409,7 @@ def admin_system_status():
     status = getProductionStatus()
     status["migrations"] = getSchemaMigrations()
     status["admins"] = getAdminUsers()
+    status["warnings"] = production_warnings()
     return jsonify(status)
 
 
