@@ -77,6 +77,7 @@
     label{ display: grid; gap: 5px; font-weight: 900; font-size: .9rem; }
     input{ width: 100%; border: 1px solid rgba(95,81,67,.28); border-radius: 10px; padding: 9px 10px; font: inherit; color: var(--espresso); background: #fff; }
     .order-status{ grid-column: 1 / -1; min-height: 22px; font-weight: 900; color: var(--olive); }
+    .cart-pill{ display:inline-flex; align-items:center; width:fit-content; padding:7px 10px; border-radius:999px; background:rgba(104,105,40,.14); color:var(--olive); font-weight:900; }
     .order-status.error{ color: #dc3545; }
 
     .results-grid{ display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; margin-top: 14px; }
@@ -114,6 +115,7 @@
       <label>Table<input id="table-number" autocomplete="off" placeholder="12"></label>
       <label>Quantity<input id="order-quantity" type="number" min="1" value="1"></label>
       <label>Notes<input id="order-notes" autocomplete="off" placeholder="No onions, extra sauce"></label>
+      <div id="cart-pill" class="cart-pill">Menu cart is empty</div>
       <div id="order-status" class="order-status" role="status"></div>
     </section>
 
@@ -188,6 +190,17 @@
       statusEl.classList.toggle("error", isError);
     }
 
+    function currentSavedCart(){
+      try { return JSON.parse(localStorage.getItem(CART_KEY) || "[]"); } catch(error) { return []; }
+    }
+
+    function updateCartPill(){
+      const saved = currentSavedCart();
+      const count = saved.reduce((sum, item) => sum + Number(item.quantity || 1), 0);
+      const pill = document.getElementById("cart-pill");
+      pill.textContent = count ? `${count} item${count === 1 ? "" : "s"} in menu cart` : "Menu cart is empty";
+    }
+
     function orderPayload(mealName){
       return {
         mealName,
@@ -227,13 +240,15 @@
       if (!meal) return;
       const quantity = Math.max(1, Number(document.getElementById("order-quantity").value || 1));
       const notes = document.getElementById("order-notes").value;
-      const saved = JSON.parse(localStorage.getItem(CART_KEY) || "[]");
+      const saved = currentSavedCart();
       const existing = saved.find(item => item.mealName === mealName && (item.notes || "") === notes);
       if (existing) existing.quantity = Number(existing.quantity || 1) + quantity;
       else saved.push({ mealName, quantity, notes });
       localStorage.setItem(CART_KEY, JSON.stringify(saved));
-      const table = encodeURIComponent(document.getElementById("table-number").value || "");
-      window.location.href = table ? `/menu?table=${table}` : "/menu";
+      updateCartPill();
+      setOrderStatus(`${mealName} added to the menu cart. Add more matches or open the full menu when ready.`);
+      button.textContent = "Added";
+      setTimeout(() => { button.textContent = button.closest(".hero-body") ? "Add to Menu Cart" : "Add to Cart"; }, 1100);
     }
 
     document.querySelectorAll("[data-order-meal]").forEach(button => {
@@ -242,6 +257,7 @@
     document.querySelectorAll("[data-cart-meal]").forEach(button => {
       button.addEventListener("click", () => addMatchToCart(button));
     });
+    updateCartPill();
   </script>
 </body>
 </html>
