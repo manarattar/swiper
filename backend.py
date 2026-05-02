@@ -327,23 +327,34 @@ def meal_to_params(meal):
     }
 
 
+def row_get(row, *keys, default=None):
+    for key in keys:
+        try:
+            return row[key]
+        except (KeyError, IndexError):
+            continue
+    return default
+
+
 def row_to_meal(row):
+    low_stock_threshold = row_get(row, "low_stock_threshold", "lowstockthreshold", default=5)
+    stock = row_get(row, "stock", default=0)
     return {
-        "name": row["name"],
-        "img": row["img"],
-        "description": row["description"],
-        "category": row["category"],
-        "meatKind": row["meatKind"],
-        "taste": row["taste"],
-        "spicy": bool(row["spicy"]),
-        "emotion": row["emotion"],
-        "emoji": row["emoji"],
-        "price": row["price"],
-        "allergens": json.loads(row["allergens"] or "[]"),
-        "available": bool(row["available"]),
-        "stock": row["stock"],
-        "lowStockThreshold": row["low_stock_threshold"],
-        "lowStock": row["stock"] <= row["low_stock_threshold"],
+        "name": row_get(row, "name", default=""),
+        "img": row_get(row, "img", default=""),
+        "description": row_get(row, "description", default=""),
+        "category": row_get(row, "category", default=""),
+        "meatKind": row_get(row, "meatKind", "meatkind", default=""),
+        "taste": row_get(row, "taste", default=""),
+        "spicy": bool(row_get(row, "spicy", default=False)),
+        "emotion": row_get(row, "emotion", default=""),
+        "emoji": row_get(row, "emoji", default=""),
+        "price": row_get(row, "price", default=""),
+        "allergens": json.loads(row_get(row, "allergens", default="[]") or "[]"),
+        "available": bool(row_get(row, "available", default=True)),
+        "stock": stock,
+        "lowStockThreshold": low_stock_threshold,
+        "lowStock": stock <= low_stock_threshold,
     }
 
 
