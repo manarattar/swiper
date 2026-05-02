@@ -3,6 +3,7 @@ import csv
 import io
 import json
 import os
+import re
 import sqlite3
 import uuid
 from contextlib import contextmanager
@@ -11,8 +12,16 @@ from datetime import datetime, timezone
 from flask import session
 from werkzeug.security import check_password_hash, generate_password_hash
 
+try:
+    import psycopg
+    from psycopg.rows import dict_row
+except ImportError:
+    psycopg = None
+    dict_row = None
+
 DATA_FILE = "meals_data.json"
 DB_PATH = os.environ.get("DATABASE_PATH", "swipeeat.db")
+DATABASE_URL = os.environ.get("DATABASE_URL", "")
 REQUIRED_MEAL_FIELDS = {
     "name",
     "img",
@@ -80,17 +89,101 @@ def load_seed_meals():
     return normalized
 
 
+class HybridRow(dict):
+    def __getitem__(self, key):
+        if isinstance(key, int):
+            return list(self.values())[key]
+        return super().__getitem__(key)
+
+
+class PostgresCursor:
+    def __init__(self, cursor):
+        self.cursor = cursor
+
+    @property
+    def rowcount(self):
+        return self.cursor.rowcount
+
+    def fetchone(self):
+        row = self.cursor.fetchone()
+        return HybridRow(row) if row is not None else None
+
+    def fetchall(self):
+        return [HybridRow(row) for row in self.cursor.fetchall()]
+
+
+class PostgresConnection:
+    is_postgres = True
+
+    def __init__(self, connection):
+        self.connection = connection
+
+    def execute(self, query, params=None):
+        query = self._adapt_query(query, params)
+        cursor = self.connection.cursor(row_factory=dict_row)
+        cursor.execute(query, params or ())
+        return PostgresCursor(cursor)
+
+    def commit(self):
+        self.connection.commit()
+
+    def close(self):
+        self.connection.close()
+
+    def _adapt_query(self, query, params=None):
+        query = query.replace("INTEGER PRIMARY KEY AUTOINCREMENT", "SERIAL PRIMARY KEY")
+        query = query.replace("UNIQUE COLLATE NOCASE", "UNIQUE")
+        query = query.replace("TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP", "TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP")
+        if "INSERT OR IGNORE INTO schema_migrations" in query:
+            query = query.replace("INSERT OR IGNORE INTO", "INSERT INTO")
+            query = query.rstrip() + " ON CONFLICT (version) DO NOTHING"
+        if isinstance(params, dict):
+            return re.sub(r":([A-Za-z_][A-Za-z0-9_]*)", r"%(\1)s", query)
+        return query.replace("?", "%s")
+
+
+def using_postgres():
+    return DATABASE_URL.startswith(("postgres://", "postgresql://"))
+
+
 @contextmanager
 def connect_db():
-    conn = sqlite3.connect(DB_PATH)
-    conn.row_factory = sqlite3.Row
+    if using_postgres():
+        if psycopg is None:
+            raise RuntimeError("DATABASE_URL is set to Postgres but psycopg is not installed")
+        conn = PostgresConnection(psycopg.connect(DATABASE_URL))
+    else:
+        conn = sqlite3.connect(DB_PATH)
+        conn.row_factory = sqlite3.Row
     try:
         yield conn
     finally:
         conn.close()
 
 
+def is_integrity_error(exc):
+    return isinstance(exc, sqlite3.IntegrityError) or "IntegrityError" in exc.__class__.__name__ or "UniqueViolation" in exc.__class__.__name__
+
+
+def adapt_column_definition(conn, definition):
+    if getattr(conn, "is_postgres", False):
+        return definition.replace("TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP", "TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP")
+    return definition
+
+
 def ensure_column(conn, table, column, definition):
+    if getattr(conn, "is_postgres", False):
+        row = conn.execute(
+            """
+            SELECT column_name
+            FROM information_schema.columns
+            WHERE table_name = ? AND column_name = ?
+            """,
+            (table, column),
+        ).fetchone()
+        if row is None:
+            conn.execute(f"ALTER TABLE {table} ADD COLUMN {column} {adapt_column_definition(conn, definition)}")
+        return
     columns = {row["name"] for row in conn.execute(f"PRAGMA table_info({table})").fetchall()}
     if column not in columns:
         conn.execute(f"ALTER TABLE {table} ADD COLUMN {column} {definition}")
@@ -317,7 +410,8 @@ def init_database(db_path=None, reset=False):
             conn.execute("DELETE FROM meals")
             conn.execute("DELETE FROM admin_users")
             conn.execute("DELETE FROM schema_migrations WHERE version != ?", (SCHEMA_VERSION,))
-            conn.execute("DELETE FROM sqlite_sequence WHERE name IN ('meals', 'orders', 'order_items', 'swipes', 'admin_users')")
+            if not getattr(conn, "is_postgres", False):
+                conn.execute("DELETE FROM sqlite_sequence WHERE name IN ('meals', 'orders', 'order_items', 'swipes', 'admin_users')")
             conn.commit()
         seed_if_empty(conn)
 
@@ -444,7 +538,9 @@ def addMeal(meal):
         with connect_db() as conn:
             insert_meal(conn, normalized)
             conn.commit()
-    except sqlite3.IntegrityError:
+    except Exception as exc:
+        if not is_integrity_error(exc):
+            raise
         raise ValueError(f"Meal already exists: {normalized['name']}")
     return getMealByName(normalized["name"])
 
@@ -482,7 +578,9 @@ def updateMealRecord(original_name, updates):
                 params,
             )
             conn.commit()
-    except sqlite3.IntegrityError:
+    except Exception as exc:
+        if not is_integrity_error(exc):
+            raise
         raise ValueError(f"Meal already exists: {updated['name']}")
     return getMealByName(updated["name"])
 
@@ -579,16 +677,19 @@ def addOrder(meal_name=None, quantity=1, table_number="", notes="", items=None):
     token = uuid.uuid4().hex[:12]
     created_at = datetime.now(timezone.utc).isoformat()
     with connect_db() as conn:
-        cursor = conn.execute(
-            """
+        insert_order_sql = """
             INSERT INTO orders (
                 meal_name, quantity, table_number, notes, status,
                 tracking_token, unit_price, total_price, payment_status, created_at, updated_at
             ) VALUES (?, ?, ?, ?, 'new', ?, ?, ?, 'unpaid', ?, ?)
-            """,
+            """
+        if getattr(conn, "is_postgres", False):
+            insert_order_sql += " RETURNING id"
+        cursor = conn.execute(
+            insert_order_sql,
             (display_name, total_quantity, table_number, order_notes, token, unit_price, total_price, created_at, created_at),
         )
-        order_id = cursor.lastrowid
+        order_id = cursor.fetchone()["id"] if getattr(conn, "is_postgres", False) else cursor.lastrowid
         for item in normalized_items:
             conn.execute(
                 """
@@ -778,7 +879,7 @@ def getAdminAnalytics():
         order_rows = conn.execute(
             """
             SELECT meal_name, SUM(quantity) AS order_count
-            FROM orders
+            FROM order_items
             GROUP BY meal_name
             ORDER BY order_count DESC, meal_name ASC
             LIMIT 10

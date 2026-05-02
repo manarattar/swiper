@@ -13,9 +13,9 @@ python -m flask --app server run --host 127.0.0.1 --port 5000 --no-reload
 
 ## Production checklist
 
-- Set `SECRET_KEY`, `ADMIN_PASSWORD`, and `DATABASE_PATH` as environment variables.
+- Set `SECRET_KEY`, `ADMIN_PASSWORD`, and either `DATABASE_URL` for Render Postgres or `DATABASE_PATH` for SQLite.
 - Do not use the default development password.
-- Keep `swipeeat.db` outside the web root and back it up.
+- Prefer Render Postgres for production. SQLite is fine locally, but persistent production orders should use `DATABASE_URL`.
 - Run behind a production WSGI server such as Waitress or Gunicorn depending on host OS.
 - Use HTTPS so session cookies and admin login are protected in transit.
 - Run `python -m unittest discover -v` before deploying.
