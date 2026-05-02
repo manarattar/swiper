@@ -408,6 +408,42 @@ class FinalUpgradeTestCase(DatabaseTestCase):
         self.assertEqual(len(qr.get_json()["codes"]), 3)
         self.assertEqual(qr.get_json()["codes"][0]["url"], "/qr/1")
 
+
+    def test_restaurant_settings_monitoring_and_connected_cart_ui(self):
+        self.login_admin()
+        update = self.client.put("/admin/settings", json={
+            "restaurantName": "Manar Kitchen",
+            "tagline": "Order your favorites fast.",
+            "currency": "?",
+            "openingHours": "10-22",
+        })
+        self.assertEqual(update.status_code, 200)
+        self.assertEqual(update.get_json()["settings"]["restaurantName"], "Manar Kitchen")
+
+        settings = self.client.get("/admin/settings")
+        self.assertEqual(settings.status_code, 200)
+        self.assertEqual(settings.get_json()["settings"]["currency"], "?")
+
+        system = self.client.get("/admin/system")
+        self.assertEqual(system.status_code, 200)
+        self.assertEqual(system.get_json()["status"], "ok")
+        self.assertIn("recentEvents", system.get_json())
+
+        menu = self.client.get("/menu").get_data(as_text=True)
+        self.assertIn("Manar Kitchen Menu", menu)
+        self.assertIn("swipeeatCart", menu)
+        self.assertIn("loadCart", menu)
+
+        for _ in range(10):
+            self.client.post("/handle_swipe", json={"liked": True})
+        recommendations = self.client.get("/meal-of-the-day").get_data(as_text=True)
+        self.assertIn("data-cart-meal", recommendations)
+        self.assertIn("Add to Menu Cart", recommendations)
+
+        kitchen = self.client.get("/kitchen").get_data(as_text=True)
+        self.assertIn("Admin Dashboard", kitchen)
+        self.assertIn("item-list", kitchen)
+
     def test_login_rate_limit_blocks_after_failures(self):
         for _ in range(5):
             self.client.post("/admin/login", data={"password": "wrong"})

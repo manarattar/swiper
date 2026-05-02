@@ -43,6 +43,18 @@ OPTIONAL_DEFAULTS = {
 VALID_ORDER_STATUSES = {"new", "preparing", "completed", "cancelled"}
 VALID_PAYMENT_STATUSES = {"unpaid", "paid", "refunded"}
 SCHEMA_VERSION = "2026-05-02-multi-item-orders"
+DEFAULT_RESTAURANT_SETTINGS = {
+    "restaurantName": "SwipeEat",
+    "tagline": "Freshly prepared. Build your order.",
+    "logoUrl": "/static/logo.png",
+    "contactPhone": "",
+    "contactEmail": "",
+    "address": "",
+    "openingHours": "",
+    "currency": "$",
+    "taxRate": "0",
+    "serviceFee": "0",
+}
 
 
 def normalize_meal(meal):
@@ -303,6 +315,44 @@ def create_schema(conn):
         )
         """
     )
+    conn.execute(
+        """
+        CREATE TABLE IF NOT EXISTS restaurant_settings (
+            key TEXT PRIMARY KEY,
+            value TEXT NOT NULL DEFAULT '',
+            updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+        )
+        """
+    )
+    conn.execute(
+        """
+        CREATE TABLE IF NOT EXISTS app_events (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            level TEXT NOT NULL,
+            source TEXT NOT NULL,
+            message TEXT NOT NULL,
+            path TEXT NOT NULL DEFAULT '',
+            created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+        )
+        """
+    )
+    conn.execute(
+        """
+        CREATE INDEX IF NOT EXISTS idx_app_events_created_at
+        ON app_events(created_at)
+        """
+    )
+    for key, value in DEFAULT_RESTAURANT_SETTINGS.items():
+        if getattr(conn, "is_postgres", False):
+            conn.execute(
+                "INSERT INTO restaurant_settings (key, value) VALUES (?, ?) ON CONFLICT (key) DO NOTHING",
+                (key, value),
+            )
+        else:
+            conn.execute(
+                "INSERT OR IGNORE INTO restaurant_settings (key, value) VALUES (?, ?)",
+                (key, value),
+            )
     conn.commit()
 
 
@@ -420,9 +470,11 @@ def init_database(db_path=None, reset=False):
             conn.execute("DELETE FROM orders")
             conn.execute("DELETE FROM meals")
             conn.execute("DELETE FROM admin_users")
+            conn.execute("DELETE FROM app_events")
+            conn.execute("DELETE FROM restaurant_settings")
             conn.execute("DELETE FROM schema_migrations WHERE version != ?", (SCHEMA_VERSION,))
             if not getattr(conn, "is_postgres", False):
-                conn.execute("DELETE FROM sqlite_sequence WHERE name IN ('meals', 'orders', 'order_items', 'swipes', 'admin_users')")
+                conn.execute("DELETE FROM sqlite_sequence WHERE name IN ('meals', 'orders', 'order_items', 'swipes', 'admin_users', 'app_events')")
             conn.commit()
         seed_if_empty(conn)
 
@@ -475,6 +527,84 @@ def getAdminUsers():
     with connect_db() as conn:
         rows = conn.execute("SELECT username, role, active, created_at FROM admin_users ORDER BY username").fetchall()
     return [dict(row) for row in rows]
+
+
+def getRestaurantSettings():
+    init_database()
+    settings = dict(DEFAULT_RESTAURANT_SETTINGS)
+    with connect_db() as conn:
+        rows = conn.execute("SELECT key, value FROM restaurant_settings").fetchall()
+    settings.update({row["key"]: row["value"] for row in rows})
+    return settings
+
+
+def updateRestaurantSettings(updates):
+    init_database()
+    allowed = set(DEFAULT_RESTAURANT_SETTINGS)
+    cleaned = {}
+    for key in allowed:
+        if key in updates:
+            cleaned[key] = str(updates.get(key, "")).strip()[:500]
+    if "restaurantName" in cleaned and not cleaned["restaurantName"]:
+        raise ValueError("Restaurant name is required")
+    if "currency" in cleaned:
+        cleaned["currency"] = cleaned["currency"][:4] or "$"
+    updated_at = datetime.now(timezone.utc).isoformat()
+    with connect_db() as conn:
+        for key, value in cleaned.items():
+            if getattr(conn, "is_postgres", False):
+                conn.execute(
+                    """
+                    INSERT INTO restaurant_settings (key, value, updated_at)
+                    VALUES (?, ?, ?)
+                    ON CONFLICT (key) DO UPDATE SET value = EXCLUDED.value, updated_at = EXCLUDED.updated_at
+                    """,
+                    (key, value, updated_at),
+                )
+            else:
+                conn.execute(
+                    """
+                    INSERT INTO restaurant_settings (key, value, updated_at)
+                    VALUES (?, ?, ?)
+                    ON CONFLICT(key) DO UPDATE SET value = excluded.value, updated_at = excluded.updated_at
+                    """,
+                    (key, value, updated_at),
+                )
+        conn.commit()
+    return getRestaurantSettings()
+
+
+def recordAppEvent(level, source, message, path=""):
+    init_database()
+    created_at = datetime.now(timezone.utc).isoformat()
+    with connect_db() as conn:
+        conn.execute(
+            "INSERT INTO app_events (level, source, message, path, created_at) VALUES (?, ?, ?, ?, ?)",
+            (str(level or "info")[:20], str(source or "app")[:80], str(message or "")[:1000], str(path or "")[:240], created_at),
+        )
+        conn.commit()
+
+
+def getProductionStatus(limit=20):
+    init_database()
+    with connect_db() as conn:
+        counts = {
+            "meals": conn.execute("SELECT COUNT(*) FROM meals").fetchone()[0],
+            "orders": conn.execute("SELECT COUNT(*) FROM orders").fetchone()[0],
+            "activeOrders": conn.execute("SELECT COUNT(*) FROM orders WHERE status IN ('new', 'preparing')").fetchone()[0],
+            "events": conn.execute("SELECT COUNT(*) FROM app_events").fetchone()[0],
+        }
+        events = conn.execute(
+            "SELECT id, level, source, message, path, created_at FROM app_events ORDER BY id DESC LIMIT ?",
+            (limit,),
+        ).fetchall()
+    return {
+        "database": "postgres" if using_postgres() else "sqlite",
+        "status": "ok",
+        "counts": counts,
+        "recentEvents": [dict(row) for row in events],
+        "settings": getRestaurantSettings(),
+    }
 
 
 def exportOrdersCsv():

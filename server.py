@@ -18,18 +18,22 @@ from backend import (
     getAllMeals,
     getInventorySummary,
     getOrderByToken,
+    getProductionStatus,
+    getRestaurantSettings,
     getOrders,
     getProgress,
     getSchemaMigrations,
     goBackOneMeal,
     nextMeal,
     resetState,
+    recordAppEvent,
     searchOrders,
     setDietaryFilters,
     updateMeal,
     updateMealRecord,
     updateOrderPaymentStatus,
     updateOrderStatus,
+    updateRestaurantSettings,
 )
 
 app = Flask(__name__)
@@ -70,7 +74,7 @@ def csrf_is_valid():
 
 @app.context_processor
 def inject_security_helpers():
-    return {"csrf_token": csrf_token, "current_admin": current_admin}
+    return {"csrf_token": csrf_token, "current_admin": current_admin, "restaurant_settings": getRestaurantSettings()}
 
 
 @app.before_request
@@ -92,7 +96,7 @@ def admin_required(view):
     def wrapped(*args, **kwargs):
         if is_admin_authenticated():
             return view(*args, **kwargs)
-        if request.path.startswith(("/admin/meals", "/admin/analytics", "/admin/orders", "/admin/inventory", "/admin/qr-codes", "/admin/export", "/admin/system", "/kitchen")):
+        if request.path.startswith(("/admin/meals", "/admin/analytics", "/admin/orders", "/admin/inventory", "/admin/qr-codes", "/admin/export", "/admin/system", "/admin/settings", "/kitchen")):
             return jsonify({"error": "Admin login required"}), 401
         return redirect(url_for("admin_login", next=request.path))
     return wrapped
@@ -346,7 +350,27 @@ def admin_export_meals():
 @app.route("/admin/system", methods=["GET"])
 @admin_required
 def admin_system_status():
-    return jsonify({"migrations": getSchemaMigrations(), "admins": getAdminUsers()})
+    status = getProductionStatus()
+    status["migrations"] = getSchemaMigrations()
+    status["admins"] = getAdminUsers()
+    return jsonify(status)
+
+
+@app.route("/admin/settings", methods=["GET"])
+@admin_required
+def admin_settings():
+    return jsonify({"settings": getRestaurantSettings()})
+
+
+@app.route("/admin/settings", methods=["PUT"])
+@admin_required
+def admin_update_settings():
+    try:
+        settings = updateRestaurantSettings(request.get_json() or {})
+    except ValueError as exc:
+        return jsonify({"error": str(exc)}), 400
+    logger.info("Admin %s updated restaurant settings", current_admin()["username"])
+    return jsonify({"settings": settings})
 
 
 @app.route("/dietary-filters", methods=["POST"])
@@ -417,6 +441,10 @@ def not_found(error):
 @app.errorhandler(500)
 def server_error(error):
     logger.exception("Unhandled server error")
+    try:
+        recordAppEvent("error", "server", str(error), request.path)
+    except Exception:
+        logger.exception("Could not record app event")
     if wants_json_response():
         return jsonify({"error": "Server error"}), 500
     return render_template("error.html", status_code=500, title="Something Went Wrong", message="Please try again in a moment."), 500

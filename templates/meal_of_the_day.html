@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width,initial-scale=1.0">
-  <title>Meal Recommendations</title>
+  <title>{{ restaurant_settings.restaurantName }} Recommendations</title>
   <style>
     :root{
       --peach: #FFE8DA;
@@ -107,7 +107,7 @@
     <header>
       <img class="title-logo" src="{{ url_for('static', filename='logo.png') }}" alt="SwipeEat logo">
       <h1>Your Top Matches</h1>
-      <p class="subtitle">Based on your swipes, this is the strongest match plus a couple of good alternatives.</p>
+      <p class="subtitle">Based on your swipes, these matches can be added to the same menu cart.</p>
     </header>
 
     <section class="order-panel" aria-label="Order details">
@@ -138,7 +138,7 @@
           {% endfor %}
         </ul>
         {% endif %}
-        <button class="button order-button" type="button" data-order-meal="{{ meal.name }}">Order Best Match</button>
+        <div class="button-row"><button class="button order-button" type="button" data-order-meal="{{ meal.name }}">Order Best Match</button><button class="button order-button" type="button" data-cart-meal="{{ meal.name }}">Add to Menu Cart</button></div>
       </div>
     </section>
 
@@ -161,7 +161,7 @@
             </ul>
             {% endif %}
             <div class="card-actions">
-              <button class="button order-button" type="button" data-order-meal="{{ recommendation.name }}">Order This Match</button>
+              <button class="button order-button" type="button" data-order-meal="{{ recommendation.name }}">Order This Match</button> <button class="button order-button" type="button" data-cart-meal="{{ recommendation.name }}">Add to Cart</button>
             </div>
           </div>
         </article>
@@ -171,6 +171,7 @@
     {% endif %}
 
     <div class="actions">
+      <a class="button order-button" href="{{ url_for('menu') }}">Open Full Menu</a>
       <form action="{{ url_for('restart') }}" method="POST">
         <button class="button" type="submit">Start Over</button>
       </form>
@@ -179,6 +180,8 @@
 
   <script>
     const statusEl = document.getElementById("order-status");
+    const recommendations = {{ recommendations|tojson }};
+    const CART_KEY = "swipeeatCart";
 
     function setOrderStatus(message, isError = false){
       statusEl.textContent = message;
@@ -218,8 +221,26 @@
       }
     }
 
+    function addMatchToCart(button){
+      const mealName = button.dataset.cartMeal;
+      const meal = recommendations.find(item => item.name === mealName);
+      if (!meal) return;
+      const quantity = Math.max(1, Number(document.getElementById("order-quantity").value || 1));
+      const notes = document.getElementById("order-notes").value;
+      const saved = JSON.parse(localStorage.getItem(CART_KEY) || "[]");
+      const existing = saved.find(item => item.mealName === mealName && (item.notes || "") === notes);
+      if (existing) existing.quantity = Number(existing.quantity || 1) + quantity;
+      else saved.push({ mealName, quantity, notes });
+      localStorage.setItem(CART_KEY, JSON.stringify(saved));
+      const table = encodeURIComponent(document.getElementById("table-number").value || "");
+      window.location.href = table ? `/menu?table=${table}` : "/menu";
+    }
+
     document.querySelectorAll("[data-order-meal]").forEach(button => {
       button.addEventListener("click", () => orderMeal(button));
+    });
+    document.querySelectorAll("[data-cart-meal]").forEach(button => {
+      button.addEventListener("click", () => addMatchToCart(button));
     });
   </script>
 </body>

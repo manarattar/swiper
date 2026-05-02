@@ -43,7 +43,7 @@
     .order-controls{ display:grid; grid-template-columns:1fr; gap:7px; justify-items:end; min-width:132px; }
     .status-select,.payment-select{ min-width:124px; border-radius:9px; padding:7px 9px; font-weight:800; }
     .payment-select{ border-color:rgba(104,105,40,.45); }
-    .layout{ display:grid; grid-template-columns:390px minmax(0,1fr); gap:18px; align-items:start; }
+    .layout{ display:grid; grid-template-columns:390px minmax(0,1fr); gap:18px; align-items:start; }.settings-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px}.settings-grid .wide{grid-column:span 2}.system-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px;margin-top:10px}
     form{ display:grid; gap:10px; }
     .logout-form{ display:inline; }
     label{ display:grid; gap:5px; font-weight:800; font-size:.9rem; }
@@ -74,7 +74,7 @@
     .detail-grid{ display:grid; gap:8px; }
     .detail-row{ display:flex; justify-content:space-between; gap:18px; border-bottom:1px solid rgba(95,81,67,.14); padding-bottom:8px; }
     @media (max-width:1080px){ .analytics-grid{ grid-template-columns:repeat(4,minmax(0,1fr)); } .analytics-panels{ grid-template-columns:1fr; } }
-    @media (max-width:850px){ .layout{ grid-template-columns:1fr; } .meal-row{ grid-template-columns:1fr; } .meal-row img{ width:100%; height:210px; } }
+    @media (max-width:850px){ .layout,.settings-grid,.system-grid{ grid-template-columns:1fr; } .settings-grid .wide{grid-column:auto;} .meal-row{ grid-template-columns:1fr; } .meal-row img{ width:100%; height:210px; } }
     @media (max-width:620px){ .header-inner{ align-items:flex-start; flex-direction:column; } .analytics-grid{ grid-template-columns:repeat(2,minmax(0,1fr)); } .form-grid{ grid-template-columns:1fr; } .analytics-list li{ flex-direction:column; } .order-controls{ width:100%; justify-items:stretch; } .status-select,.payment-select{ min-height:44px; } }
   </style>
 </head>
@@ -85,7 +85,7 @@
         <h1>Menu Admin</h1>
         <div class="muted">Manage live orders, payments, menu availability, prices, and allergens.</div>
       </div>
-      <div class="button-row"><a class="nav-link" href="{{ url_for('menu') }}">View Menu</a><a class="nav-link" href="{{ url_for('kitchen') }}">Kitchen Mode</a><form method="POST" action="{{ url_for('admin_logout') }}" class="logout-form"><input type="hidden" name="_csrf" value="{{ csrf_token() }}"><button type="submit" class="ghost">Log Out</button></form></div>
+      <div class="button-row"><a class="nav-link" href="{{ url_for('menu') }}">View Menu</a><a class="nav-link" href="{{ url_for('food_swipe') }}">Swipe Flow</a><a class="nav-link" href="{{ url_for('kitchen') }}">Kitchen Mode</a><form method="POST" action="{{ url_for('admin_logout') }}" class="logout-form"><input type="hidden" name="_csrf" value="{{ csrf_token() }}"><button type="submit" class="ghost">Log Out</button></form></div>
     </div>
   </header>
 
@@ -111,6 +111,29 @@
         <div class="panel"><h2>Most Ordered</h2><ul id="orders-by-meal" class="analytics-list"></ul></div>
         <div class="panel"><h2>Swipe Performance</h2><ul id="swipe-stats" class="analytics-list"></ul></div>
       </div>
+    </section>
+
+
+    <section class="panel" aria-label="Restaurant settings">
+      <div class="panel-heading"><h2>Restaurant Settings</h2><button type="button" id="save-settings" class="secondary">Save Settings</button></div>
+      <div class="settings-grid">
+        <label>Restaurant name<input id="setting-restaurantName"></label>
+        <label>Currency<input id="setting-currency" maxlength="4"></label>
+        <label>Tax rate %<input id="setting-taxRate" inputmode="decimal"></label>
+        <label>Service fee<input id="setting-serviceFee" inputmode="decimal"></label>
+        <label class="wide">Tagline<input id="setting-tagline"></label>
+        <label class="wide">Logo URL<input id="setting-logoUrl"></label>
+        <label>Phone<input id="setting-contactPhone"></label>
+        <label>Email<input id="setting-contactEmail"></label>
+        <label class="wide">Address<input id="setting-address"></label>
+        <label class="wide">Opening hours<input id="setting-openingHours"></label>
+      </div>
+    </section>
+
+    <section class="panel" aria-label="Production monitoring">
+      <div class="panel-heading"><h2>Production Monitoring</h2><button type="button" id="refresh-system" class="ghost">Refresh</button></div>
+      <div id="system-summary" class="system-grid"></div>
+      <ul id="system-events" class="analytics-list"></ul>
     </section>
 
     <div class="layout">
@@ -147,6 +170,7 @@
     const fields = ["name", "description", "img", "category", "meatKind", "taste", "emotion", "emoji", "price", "allergens", "spicy", "available"];
     const liveRefreshState = document.getElementById("live-refresh-state");
     const modal = document.getElementById("order-modal");
+    const settingFields = ["restaurantName", "tagline", "logoUrl", "contactPhone", "contactEmail", "address", "openingHours", "currency", "taxRate", "serviceFee"];
     let latestSeenOrderId = null;
     let analyticsRefreshing = false;
     let currentOrderFilter = "active";
@@ -208,9 +232,14 @@
     function bindOrderStatusControls(){ document.querySelectorAll(".status-select").forEach(select => { select.addEventListener("change", () => updateOrderStatus(select.dataset.orderId, select.value)); }); }
     function bindPaymentStatusControls(){ document.querySelectorAll(".payment-select").forEach(select => { select.addEventListener("change", () => updatePaymentStatus(select.dataset.orderId, select.value)); }); }
     function bindDetailButtons(orders){ const byId = Object.fromEntries(orders.map(order => [String(order.id), order])); document.querySelectorAll(".detail-button").forEach(button => { button.addEventListener("click", () => showOrderDetails(byId[button.dataset.orderId])); }); }
-    function showOrderDetails(order){ if (!order) return; document.getElementById("modal-title").textContent = `Order #${order.id}`; document.getElementById("modal-badges").innerHTML = `${badge(order.status)}${badge(order.paymentStatus)}`; document.getElementById("modal-details").innerHTML = [["Meal", `${escapeHtml(order.mealName)} x${order.quantity}`], ["Table", escapeHtml(order.tableNumber || "Not set")], ["Notes", escapeHtml(order.notes || "None")], ["Total", money(order.totalPrice)], ["ETA", `${order.estimatedMinutes} min`], ["Created", new Date(order.createdAt).toLocaleString()], ["Tracking", `<a href="${order.trackingUrl}">${order.trackingUrl}</a>`]].map(([label, value]) => `<div class="detail-row"><strong>${label}</strong><span>${value}</span></div>`).join(""); document.getElementById("modal-receipt").href = `/receipt/${order.trackingToken}`; modal.showModal(); }
+    function showOrderDetails(order){ if (!order) return; document.getElementById("modal-title").textContent = `Order #${order.id}`; document.getElementById("modal-badges").innerHTML = `${badge(order.status)}${badge(order.paymentStatus)}`; const itemLines = (order.items || []).map(item => `${escapeHtml(item.mealName)} x${item.quantity}${item.notes ? ` (${escapeHtml(item.notes)})` : ""}`).join("<br>") || `${escapeHtml(order.mealName)} x${order.quantity}`; document.getElementById("modal-details").innerHTML = [["Items", itemLines], ["Table", escapeHtml(order.tableNumber || "Not set")], ["Customer notes", escapeHtml(order.notes || "None")], ["Total", money(order.totalPrice)], ["ETA", `${order.estimatedMinutes} min`], ["Created", new Date(order.createdAt).toLocaleString()], ["Tracking", `<a href="${order.trackingUrl}">${order.trackingUrl}</a>`]].map(([label, value]) => `<div class="detail-row"><strong>${label}</strong><span>${value}</span></div>`).join(""); document.getElementById("modal-receipt").href = `/receipt/${order.trackingToken}`; modal.showModal(); }
     async function updateOrderStatus(orderId, status){ const response = await fetch(`/admin/orders/${orderId}`, { method:"PUT", headers:jsonHeaders(), body:JSON.stringify({ status }) }); const data = await response.json(); if (!response.ok) { setStatus(data.error || "Could not update order", true); await refreshAnalytics({ silent:true }); return; } setStatus(`Order #${data.order.id} marked ${data.order.status}.`); await refreshAnalytics({ silent:true }); }
     async function updatePaymentStatus(orderId, paymentStatus){ const response = await fetch(`/admin/orders/${orderId}/payment`, { method:"PUT", headers:jsonHeaders(), body:JSON.stringify({ paymentStatus }) }); const data = await response.json(); if (!response.ok) { setStatus(data.error || "Could not update payment", true); await refreshAnalytics({ silent:true }); return; } setStatus(`Order #${data.order.id} payment marked ${data.order.paymentStatus}.`); await refreshAnalytics({ silent:true }); }
+
+
+    async function loadSettings(){ const response = await fetch("/admin/settings"); if (!response.ok) return; const data = await response.json(); const settings = data.settings || {}; settingFields.forEach(key => { const input = document.getElementById(`setting-${key}`); if (input) input.value = settings[key] || ""; }); }
+    async function saveSettings(){ const payload = {}; settingFields.forEach(key => { const input = document.getElementById(`setting-${key}`); if (input) payload[key] = input.value; }); const response = await fetch("/admin/settings", { method:"PUT", headers:jsonHeaders(), body:JSON.stringify(payload) }); const data = await response.json(); if (!response.ok) { setStatus(data.error || "Could not save settings", true); return; } setStatus("Restaurant settings saved."); loadSettings(); }
+    async function refreshSystem(){ const response = await fetch("/admin/system"); if (!response.ok) return; const data = await response.json(); const counts = data.counts || {}; document.getElementById("system-summary").innerHTML = [["Database", data.database || "unknown"], ["Status", data.status || "unknown"], ["Orders", counts.orders || 0], ["Events", counts.events || 0]].map(([label, value]) => `<div class="metric-card"><span>${label}</span><strong>${escapeHtml(value)}</strong></div>`).join(""); document.getElementById("system-events").innerHTML = (data.recentEvents || []).map(event => `<li><span><strong>${escapeHtml(event.level)}</strong> ${escapeHtml(event.message)}<br><span class="analytics-meta">${escapeHtml(event.path)} ${new Date(event.created_at).toLocaleString()}</span></span><span class="analytics-value">${escapeHtml(event.source)}</span></li>`).join("") || "<li>No recorded events.</li>"; }
 
     function renderMeals(){ list.innerHTML = ""; meals.forEach(meal => { const row = document.createElement("article"); row.className = "meal-row"; row.innerHTML = `<img src="${escapeHtml(meal.img)}" alt="${escapeHtml(meal.name)} image"><div><h3>${escapeHtml(meal.emoji)} ${escapeHtml(meal.name)}</h3><p class="muted">${escapeHtml(meal.description)}</p><div class="chips"><span class="chip">${escapeHtml(meal.category)}</span><span class="chip">${escapeHtml(meal.meatKind)}</span><span class="chip">${escapeHtml(meal.taste)}</span><span class="chip">${meal.spicy ? "Spicy" : "Mild"}</span><span class="chip">${meal.available ? "Available" : "Hidden"}</span>${meal.price ? `<span class="chip">${escapeHtml(meal.price)}</span>` : ""}${(meal.allergens || []).map(item => `<span class="chip">${escapeHtml(item)}</span>`).join("")}</div><div class="row-actions"><button class="secondary" type="button">Edit</button><button class="danger" type="button">Delete</button></div></div>`; row.querySelector(".secondary").addEventListener("click", () => fillForm(meal)); row.querySelector(".danger").addEventListener("click", () => deleteMeal(meal.name)); list.appendChild(row); }); }
     async function refreshMeals(){ const response = await fetch("/admin/meals"); const data = await response.json(); meals = data.meals; renderMeals(); refreshAnalytics({ silent:true }); }
@@ -219,13 +248,13 @@
     const opsOutput = document.getElementById("ops-output");
     function renderOps(items){ opsOutput.innerHTML = items.length ? items.map(item => `<li>${item}</li>`).join("") : "<li>No results.</li>"; }
 
-    form.addEventListener("submit", saveMeal); document.getElementById("reset-button").addEventListener("click", clearForm); document.getElementById("modal-close").addEventListener("click", () => modal.close());
+    form.addEventListener("submit", saveMeal); document.getElementById("reset-button").addEventListener("click", clearForm); document.getElementById("modal-close").addEventListener("click", () => modal.close()); document.getElementById("save-settings").addEventListener("click", saveSettings); document.getElementById("refresh-system").addEventListener("click", refreshSystem);
     document.getElementById("search-orders").addEventListener("click", async () => { const params = new URLSearchParams(); params.set("q", document.getElementById("order-search").value); if (currentPaymentFilter) params.set("paymentStatus", currentPaymentFilter); const response = await fetch(`/admin/orders/search?${params.toString()}`); const data = await response.json(); renderOps((data.orders || []).map(order => `#${order.id} ${escapeHtml(order.mealName)} table ${escapeHtml(order.tableNumber || "-")} ${badge(order.status)} ${badge(order.paymentStatus)}`)); });
     document.getElementById("load-inventory").addEventListener("click", async () => { const response = await fetch("/admin/inventory"); const data = await response.json(); renderOps([...(data.lowStock || []).map(meal => `Low: ${escapeHtml(meal.name)} (${meal.stock})`), ...(data.soldOut || []).map(meal => `Sold out: ${escapeHtml(meal.name)}`)]); });
     document.getElementById("generate-qr").addEventListener("click", async () => { const tables = encodeURIComponent(document.getElementById("qr-count").value || 12); const response = await fetch(`/admin/qr-codes?tables=${tables}`); const data = await response.json(); renderOps((data.codes || []).map(code => `Table ${code.table}: ${code.url}`)); });
     document.querySelectorAll("[data-order-filter]").forEach(button => { button.addEventListener("click", () => { currentOrderFilter = button.dataset.orderFilter; refreshAnalytics({ silent:true }); }); });
     document.querySelectorAll("[data-payment-filter]").forEach(button => { button.addEventListener("click", () => { currentPaymentFilter = button.dataset.paymentFilter; refreshAnalytics({ silent:true }); }); });
-    renderMeals(); setActiveFilters(); refreshAnalytics({ silent:true }); setInterval(() => refreshAnalytics(), 5000); document.addEventListener("visibilitychange", () => { if (!document.hidden) refreshAnalytics({ silent:true }); });
+    renderMeals(); setActiveFilters(); loadSettings(); refreshSystem(); refreshAnalytics({ silent:true }); setInterval(() => refreshAnalytics(), 5000); document.addEventListener("visibilitychange", () => { if (!document.hidden) { refreshAnalytics({ silent:true }); refreshSystem(); } });
   </script>
 </body>
 </html>
