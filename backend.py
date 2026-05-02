@@ -33,7 +33,7 @@ OPTIONAL_DEFAULTS = {
 }
 VALID_ORDER_STATUSES = {"new", "preparing", "completed", "cancelled"}
 VALID_PAYMENT_STATUSES = {"unpaid", "paid", "refunded"}
-SCHEMA_VERSION = "2026-05-02-official-readiness"
+SCHEMA_VERSION = "2026-05-02-multi-item-orders"
 
 
 def normalize_meal(meal):
@@ -180,6 +180,27 @@ def create_schema(conn):
     ensure_column(conn, "orders", "payment_status", "TEXT NOT NULL DEFAULT 'unpaid'")
     conn.execute(
         """
+        CREATE TABLE IF NOT EXISTS order_items (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            order_id INTEGER NOT NULL,
+            meal_name TEXT NOT NULL,
+            quantity INTEGER NOT NULL DEFAULT 1,
+            unit_price REAL NOT NULL DEFAULT 0,
+            total_price REAL NOT NULL DEFAULT 0,
+            notes TEXT NOT NULL DEFAULT '',
+            created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+            FOREIGN KEY(order_id) REFERENCES orders(id) ON DELETE CASCADE
+        )
+        """
+    )
+    conn.execute(
+        """
+        CREATE INDEX IF NOT EXISTS idx_order_items_order_id
+        ON order_items(order_id)
+        """
+    )
+    conn.execute(
+        """
         CREATE TABLE IF NOT EXISTS swipes (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             meal_name TEXT NOT NULL,
@@ -233,10 +254,14 @@ def row_to_meal(row):
     }
 
 
-def row_to_order(row):
+def row_to_order(row, items=None):
+    items = items or []
+    display_name = row["meal_name"]
+    if len(items) > 1:
+        display_name = f"{items[0]['mealName']} + {len(items) - 1} more"
     return {
         "id": row["id"],
-        "mealName": row["meal_name"],
+        "mealName": display_name,
         "quantity": row["quantity"],
         "tableNumber": row["table_number"],
         "notes": row["notes"],
@@ -249,6 +274,8 @@ def row_to_order(row):
         "totalPrice": row["total_price"],
         "paymentStatus": row["payment_status"],
         "estimatedMinutes": estimate_prep_minutes(row["status"]),
+        "items": items,
+        "itemCount": len(items) if items else 1,
     }
 
 
@@ -285,11 +312,12 @@ def init_database(db_path=None, reset=False):
         create_schema(conn)
         if reset:
             conn.execute("DELETE FROM swipes")
+            conn.execute("DELETE FROM order_items")
             conn.execute("DELETE FROM orders")
             conn.execute("DELETE FROM meals")
             conn.execute("DELETE FROM admin_users")
             conn.execute("DELETE FROM schema_migrations WHERE version != ?", (SCHEMA_VERSION,))
-            conn.execute("DELETE FROM sqlite_sequence WHERE name IN ('meals', 'orders', 'swipes', 'admin_users')")
+            conn.execute("DELETE FROM sqlite_sequence WHERE name IN ('meals', 'orders', 'order_items', 'swipes', 'admin_users')")
             conn.commit()
         seed_if_empty(conn)
 
@@ -470,6 +498,28 @@ def deleteMealRecord(name):
     return existing
 
 
+def row_to_order_item(row):
+    return {
+        "mealName": row["meal_name"],
+        "quantity": row["quantity"],
+        "unitPrice": row["unit_price"],
+        "totalPrice": row["total_price"],
+        "notes": row["notes"],
+    }
+
+
+def getOrderItems(conn, order_id):
+    rows = conn.execute(
+        """
+        SELECT meal_name, quantity, unit_price, total_price, notes
+        FROM order_items
+        WHERE order_id = ?
+        ORDER BY id
+        """,
+        (order_id,),
+    ).fetchall()
+    return [row_to_order_item(row) for row in rows]
+
 def normalize_quantity(quantity):
     try:
         normalized = int(quantity)
@@ -480,18 +530,52 @@ def normalize_quantity(quantity):
     return normalized
 
 
-def addOrder(meal_name, quantity=1, table_number="", notes=""):
+def normalize_order_items(items=None, meal_name=None, quantity=1, notes=""):
+    if items is None:
+        items = [{"mealName": meal_name, "quantity": quantity, "notes": notes}]
+    if not isinstance(items, list) or not items:
+        raise ValueError("Order needs at least one item")
+    normalized = []
+    for item in items:
+        item_meal_name = str(item.get("mealName") or item.get("meal_name") or "").strip()
+        if not item_meal_name:
+            raise ValueError("Order item needs a meal name")
+        item_quantity = normalize_quantity(item.get("quantity", 1))
+        item_notes = str(item.get("notes") or "").strip()[:160]
+        meal = getMealByName(item_meal_name)
+        if meal is None or not meal.get("available", True):
+            raise ValueError(f"Meal not available: {item_meal_name}")
+        if meal.get("stock", 0) < item_quantity:
+            raise ValueError(f"Not enough stock for: {item_meal_name}")
+        unit_price = parse_price(meal.get("price"))
+        normalized.append({
+            "meal": meal,
+            "mealName": meal["name"],
+            "quantity": item_quantity,
+            "notes": item_notes,
+            "unitPrice": unit_price,
+            "totalPrice": round(unit_price * item_quantity, 2),
+        })
+    stock_by_meal = {}
+    for item in normalized:
+        stock_by_meal[item["mealName"].lower()] = stock_by_meal.get(item["mealName"].lower(), 0) + item["quantity"]
+    for key, total_quantity in stock_by_meal.items():
+        meal = next(item["meal"] for item in normalized if item["mealName"].lower() == key)
+        if meal.get("stock", 0) < total_quantity:
+            raise ValueError(f"Not enough stock for: {meal['name']}")
+    return normalized
+
+
+def addOrder(meal_name=None, quantity=1, table_number="", notes="", items=None):
     init_database()
-    meal = getMealByName(meal_name)
-    if meal is None or not meal.get("available", True):
-        raise ValueError(f"Meal not available: {meal_name}")
-    quantity = normalize_quantity(quantity)
-    if meal.get("stock", 0) < quantity:
-        raise ValueError(f"Not enough stock for: {meal_name}")
+    normalized_items = normalize_order_items(items, meal_name, quantity, notes)
     table_number = str(table_number or "").strip()[:40]
-    notes = str(notes or "").strip()[:240]
-    unit_price = parse_price(meal.get("price"))
-    total_price = round(unit_price * quantity, 2)
+    order_notes = str(notes or "").strip()[:240]
+    total_quantity = sum(item["quantity"] for item in normalized_items)
+    total_price = round(sum(item["totalPrice"] for item in normalized_items), 2)
+    first_item = normalized_items[0]
+    display_name = first_item["mealName"] if len(normalized_items) == 1 else f"{first_item['mealName']} + {len(normalized_items) - 1} more"
+    unit_price = first_item["unitPrice"] if len(normalized_items) == 1 else 0
     token = uuid.uuid4().hex[:12]
     created_at = datetime.now(timezone.utc).isoformat()
     with connect_db() as conn:
@@ -502,27 +586,36 @@ def addOrder(meal_name, quantity=1, table_number="", notes=""):
                 tracking_token, unit_price, total_price, payment_status, created_at, updated_at
             ) VALUES (?, ?, ?, ?, 'new', ?, ?, ?, 'unpaid', ?, ?)
             """,
-            (meal["name"], quantity, table_number, notes, token, unit_price, total_price, created_at, created_at),
+            (display_name, total_quantity, table_number, order_notes, token, unit_price, total_price, created_at, created_at),
         )
-        conn.execute(
-            """
-            UPDATE meals
-            SET stock = stock - ?,
-                available = CASE WHEN stock - ? <= 0 THEN 0 ELSE available END,
-                updated_at = CURRENT_TIMESTAMP
-            WHERE lower(name) = lower(?)
-            """,
-            (quantity, quantity, meal["name"]),
-        )
-        conn.commit()
         order_id = cursor.lastrowid
+        for item in normalized_items:
+            conn.execute(
+                """
+                INSERT INTO order_items (order_id, meal_name, quantity, unit_price, total_price, notes, created_at)
+                VALUES (?, ?, ?, ?, ?, ?, ?)
+                """,
+                (order_id, item["mealName"], item["quantity"], item["unitPrice"], item["totalPrice"], item["notes"], created_at),
+            )
+            conn.execute(
+                """
+                UPDATE meals
+                SET stock = stock - ?,
+                    available = CASE WHEN stock - ? <= 0 THEN 0 ELSE available END,
+                    updated_at = CURRENT_TIMESTAMP
+                WHERE lower(name) = lower(?)
+                """,
+                (item["quantity"], item["quantity"], item["mealName"]),
+            )
+        conn.commit()
     return getOrderById(order_id)
 
 def getOrderById(order_id):
     init_database()
     with connect_db() as conn:
         row = conn.execute("SELECT * FROM orders WHERE id = ?", (order_id,)).fetchone()
-    return row_to_order(row) if row else None
+        items = getOrderItems(conn, order_id) if row else []
+    return row_to_order(row, items) if row else None
 
 
 
@@ -530,7 +623,8 @@ def getOrderByToken(token):
     init_database()
     with connect_db() as conn:
         row = conn.execute("SELECT * FROM orders WHERE tracking_token = ?", (str(token or "").strip(),)).fetchone()
-    return row_to_order(row) if row else None
+        items = getOrderItems(conn, row["id"]) if row else []
+    return row_to_order(row, items) if row else None
 def getOrders(limit=None, status=None, payment_status=None):
     init_database()
     query = "SELECT * FROM orders"
@@ -558,7 +652,7 @@ def getOrders(limit=None, status=None, payment_status=None):
         params.append(limit)
     with connect_db() as conn:
         rows = conn.execute(query, params).fetchall()
-    return [row_to_order(row) for row in rows]
+        return [row_to_order(row, getOrderItems(conn, row["id"])) for row in rows]
 
 
 def estimate_prep_minutes(status):
@@ -618,7 +712,7 @@ def searchOrders(term="", status=None, payment_status=None, limit=50):
     params.append(limit)
     with connect_db() as conn:
         rows = conn.execute(query, params).fetchall()
-    return [row_to_order(row) for row in rows]
+        return [row_to_order(row, getOrderItems(conn, row["id"])) for row in rows]
 
 
 def getInventorySummary():

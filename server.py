@@ -271,13 +271,13 @@ def admin_update_order(order_id):
 @app.route("/orders", methods=["POST"])
 def create_order():
     data = request.get_json() or {}
-    meal_name = data.get("mealName", "")
     try:
         order = addOrder(
-            meal_name,
+            data.get("mealName", ""),
             quantity=data.get("quantity", 1),
             table_number=data.get("tableNumber", ""),
             notes=data.get("notes", ""),
+            items=data.get("items"),
         )
     except ValueError as exc:
         return jsonify({"error": str(exc)}), 400

@@ -124,11 +124,37 @@ class SwipeEatTestCase(DatabaseTestCase):
         order = response.get_json()["order"]
         self.assertEqual(order["mealName"], "Currywurst")
         self.assertEqual(order["quantity"], 2)
+        self.assertEqual(order["itemCount"], 1)
+        self.assertEqual(order["items"][0]["mealName"], "Currywurst")
         self.assertEqual(order["tableNumber"], "7")
         self.assertEqual(order["notes"], "extra ketchup")
         self.assertEqual(order["status"], "new")
         self.assertEqual(backend.getOrders()[0]["mealName"], "Currywurst")
 
+
+    def test_order_endpoint_accepts_multi_item_cart_as_one_order(self):
+        response = self.client.post("/orders", json={
+            "tableNumber": "5",
+            "notes": "bring together",
+            "items": [
+                {"mealName": "Currywurst", "quantity": 2, "notes": "extra ketchup"},
+                {"mealName": "Fettuccine Alfredo", "quantity": 1},
+            ],
+        })
+
+        self.assertEqual(response.status_code, 201)
+        order = response.get_json()["order"]
+        self.assertEqual(order["itemCount"], 2)
+        self.assertEqual(order["quantity"], 3)
+        self.assertEqual(order["mealName"], "Currywurst + 1 more")
+        self.assertEqual(order["items"][0]["mealName"], "Currywurst")
+        self.assertEqual(order["items"][0]["quantity"], 2)
+        self.assertEqual(order["items"][1]["mealName"], "Fettuccine Alfredo")
+        self.assertEqual(backend.getMealByName("Currywurst")["stock"], 23)
+        self.assertEqual(backend.getMealByName("Fettuccine Alfredo")["stock"], 24)
+        tracking = self.client.get(order["trackingUrl"]).get_data(as_text=True)
+        self.assertIn("Currywurst x2", tracking)
+        self.assertIn("Fettuccine Alfredo x1", tracking)
     def test_order_endpoint_rejects_invalid_quantity(self):
         response = self.client.post("/orders", json={"mealName": "Currywurst", "quantity": 0})
 

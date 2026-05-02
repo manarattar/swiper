@@ -1,24 +1,4 @@
 <!doctype html>
 <html lang="en">
-<head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Receipt #{{ order.id }}</title>
-  <style>body{margin:0;font-family:system-ui;color:#4F3525;background:#FFE8DA;padding:20px}.receipt{width:min(520px,100%);margin:30px auto;background:#fff;border:1px solid rgba(95,81,67,.22);border-radius:12px;padding:22px;box-shadow:0 10px 20px rgba(79,53,37,.14)}h1{margin:0;color:#D17F2D}.muted{color:rgba(95,81,67,.85)}.row{display:flex;justify-content:space-between;gap:18px;border-bottom:1px solid rgba(95,81,67,.16);padding:10px 0}.total{font-size:1.2rem;font-weight:900}.button{display:inline-block;margin-top:16px;border-radius:10px;padding:10px 12px;background:#D17F2D;color:#fff;text-decoration:none;font-weight:900}@media print{body{background:#fff;padding:0}.receipt{box-shadow:none;border:0;margin:0}.button{display:none}}</style>
-</head>
-<body>
-  <main class="receipt">
-    <h1>SwipeEat Receipt</h1>
-    <p class="muted">Order #{{ order.id }} · {{ order.createdAt }}</p>
-    <div class="row"><strong>Meal</strong><span>{{ order.mealName }}</span></div>
-    <div class="row"><strong>Quantity</strong><span>{{ order.quantity }}</span></div>
-    <div class="row"><strong>Table</strong><span>{{ order.tableNumber or 'Not set' }}</span></div>
-    <div class="row"><strong>Status</strong><span>{{ order.status }}</span></div>
-    <div class="row"><strong>Payment</strong><span>{{ order.paymentStatus }}</span></div>
-    {% if order.notes %}<div class="row"><strong>Notes</strong><span>{{ order.notes }}</span></div>{% endif %}
-    <div class="row"><strong>Unit price</strong><span>${{ '%.2f'|format(order.unitPrice or 0) }}</span></div>
-    <div class="row total"><strong>Total</strong><span>${{ '%.2f'|format(order.totalPrice or 0) }}</span></div>
-    <a class="button" href="{{ url_for('order_tracking', token=order.trackingToken) }}">Track Order</a>
-  </main>
-</body>
-</html>
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>Receipt #{{ order.id }}</title><style>body{margin:0;font-family:system-ui;color:#4F3525;background:#FFE8DA;padding:20px}.receipt{width:min(560px,100%);margin:30px auto;background:#fff;border:1px solid rgba(95,81,67,.22);border-radius:12px;padding:22px;box-shadow:0 10px 20px rgba(79,53,37,.14)}h1{margin:0;color:#D17F2D}.muted{color:rgba(95,81,67,.85)}.row,.item{display:flex;justify-content:space-between;gap:18px;border-bottom:1px solid rgba(95,81,67,.16);padding:10px 0}.total{font-size:1.2rem;font-weight:900}.button{display:inline-block;margin-top:16px;border-radius:10px;padding:10px 12px;background:#D17F2D;color:#fff;text-decoration:none;font-weight:900}@media print{body{background:#fff;padding:0}.receipt{box-shadow:none;border:0;margin:0}.button{display:none}}</style></head>
+<body><main class="receipt"><h1>SwipeEat Receipt</h1><p class="muted">Order #{{ order.id }} Â· {{ order.createdAt }}</p>{% for item in order["items"] %}<div class="item"><span>{{ item.mealName }} x{{ item.quantity }}{% if item.notes %}<br><small>{{ item.notes }}</small>{% endif %}</span><span>${{ '%.2f'|format(item.totalPrice or 0) }}</span></div>{% endfor %}<div class="row"><strong>Table</strong><span>{{ order.tableNumber or 'Not set' }}</span></div><div class="row"><strong>Status</strong><span>{{ order.status }}</span></div><div class="row"><strong>Payment</strong><span>{{ order.paymentStatus }}</span></div>{% if order.notes %}<div class="row"><strong>Notes</strong><span>{{ order.notes }}</span></div>{% endif %}<div class="row total"><strong>Total</strong><span>${{ '%.2f'|format(order.totalPrice or 0) }}</span></div><a class="button" href="{{ url_for('order_tracking', token=order.trackingToken) }}">Track Order</a></main></body></html>
