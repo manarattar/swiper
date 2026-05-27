@@ -12,7 +12,7 @@ from datetime import datetime, timezone
 from flask import session
 from werkzeug.security import check_password_hash, generate_password_hash
 
-from ml_recommender import load_model, ml_scores, train_from_meals
+from ml_recommender import cosine_similarity, load_model, meal_document, ml_scores, train_from_meals, vectorize
 
 try:
     import psycopg
@@ -44,6 +44,7 @@ OPTIONAL_DEFAULTS = {
 }
 VALID_ORDER_STATUSES = {"new", "preparing", "completed", "cancelled"}
 VALID_PAYMENT_STATUSES = {"unpaid", "paid", "refunded"}
+VALID_TABLE_SESSION_STATUSES = {"open", "closed"}
 SCHEMA_VERSION = "2026-05-02-multi-item-orders"
 DEFAULT_RESTAURANT_SETTINGS = {
     "restaurantName": "SwipeEat",
@@ -300,6 +301,47 @@ def create_schema(conn):
     ensure_column(conn, "orders", "payment_status", "TEXT NOT NULL DEFAULT 'unpaid'")
     ensure_column(conn, "orders", "estimated_minutes", "INTEGER NOT NULL DEFAULT 12")
     ensure_column(conn, "orders", "status_started_at", "TEXT NOT NULL DEFAULT ''")
+    ensure_column(conn, "orders", "table_session_token", "TEXT NOT NULL DEFAULT ''")
+    ensure_column(conn, "orders", "round_id", "INTEGER NOT NULL DEFAULT 0")
+    conn.execute(
+        """
+        CREATE TABLE IF NOT EXISTS table_sessions (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            token TEXT NOT NULL UNIQUE,
+            table_number TEXT NOT NULL DEFAULT '',
+            guest_name TEXT NOT NULL DEFAULT '',
+            status TEXT NOT NULL DEFAULT 'open',
+            created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+            updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+        )
+        """
+    )
+    conn.execute(
+        """
+        CREATE INDEX IF NOT EXISTS idx_table_sessions_token
+        ON table_sessions(token)
+        """
+    )
+    conn.execute(
+        """
+        CREATE TABLE IF NOT EXISTS order_rounds (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            table_session_token TEXT NOT NULL DEFAULT '',
+            round_number INTEGER NOT NULL DEFAULT 1,
+            order_id INTEGER NOT NULL DEFAULT 0,
+            subtotal_price REAL NOT NULL DEFAULT 0,
+            total_price REAL NOT NULL DEFAULT 0,
+            status TEXT NOT NULL DEFAULT 'sent',
+            created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+        )
+        """
+    )
+    conn.execute(
+        """
+        CREATE INDEX IF NOT EXISTS idx_order_rounds_session
+        ON order_rounds(table_session_token)
+        """
+    )
     conn.execute(
         """
         CREATE TABLE IF NOT EXISTS order_items (
@@ -372,6 +414,26 @@ def create_schema(conn):
             path TEXT NOT NULL DEFAULT '',
             created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
         )
+        """
+    )
+    conn.execute(
+        """
+        CREATE TABLE IF NOT EXISTS recommendation_events (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            analytics_session_id TEXT NOT NULL DEFAULT '',
+            table_session_token TEXT NOT NULL DEFAULT '',
+            source TEXT NOT NULL DEFAULT '',
+            query TEXT NOT NULL DEFAULT '',
+            meal_name TEXT NOT NULL DEFAULT '',
+            score REAL NOT NULL DEFAULT 0,
+            created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+        )
+        """
+    )
+    conn.execute(
+        """
+        CREATE INDEX IF NOT EXISTS idx_recommendation_events_created_at
+        ON recommendation_events(created_at)
         """
     )
     conn.execute(
@@ -522,6 +584,8 @@ def row_to_order(row, items=None):
         "elapsedMinutes": elapsed_minutes,
         "statusAgeMinutes": status_age_minutes,
         "isDelayed": row["status"] in ("new", "preparing") and status_age_minutes > max(estimated_minutes, 1),
+        "tableSessionToken": row_get(row, "table_session_token", default=""),
+        "roundId": row_get(row, "round_id", default=0),
         "items": items,
         "itemCount": len(items) if items else 1,
     }
@@ -562,6 +626,9 @@ def init_database(db_path=None, reset=False):
             conn.execute("DELETE FROM swipes")
             conn.execute("DELETE FROM order_items")
             conn.execute("DELETE FROM orders")
+            conn.execute("DELETE FROM order_rounds")
+            conn.execute("DELETE FROM table_sessions")
+            conn.execute("DELETE FROM recommendation_events")
             conn.execute("DELETE FROM meals")
             conn.execute("DELETE FROM admin_users")
             conn.execute("DELETE FROM app_events")
@@ -569,7 +636,7 @@ def init_database(db_path=None, reset=False):
             conn.execute("DELETE FROM restaurant_settings")
             conn.execute("DELETE FROM schema_migrations WHERE version != ?", (SCHEMA_VERSION,))
             if not getattr(conn, "is_postgres", False):
-                conn.execute("DELETE FROM sqlite_sequence WHERE name IN ('meals', 'orders', 'order_items', 'order_history', 'swipes', 'admin_users', 'app_events')")
+                conn.execute("DELETE FROM sqlite_sequence WHERE name IN ('meals', 'orders', 'order_items', 'order_history', 'order_rounds', 'table_sessions', 'recommendation_events', 'swipes', 'admin_users', 'app_events')")
             conn.commit()
         seed_if_empty(conn)
 
@@ -928,6 +995,159 @@ def calculate_order_totals(subtotal):
     }
 
 
+def table_session_to_dict(row):
+    return {
+        "id": row["id"],
+        "token": row["token"],
+        "tableNumber": row_get(row, "table_number", default=""),
+        "guestName": row_get(row, "guest_name", default=""),
+        "status": row_get(row, "status", default="open"),
+        "createdAt": row_get(row, "created_at", default=""),
+        "updatedAt": row_get(row, "updated_at", default=""),
+    }
+
+
+def getTableSessionByToken(token):
+    init_database()
+    token = str(token or "").strip()
+    if not token:
+        return None
+    with connect_db() as conn:
+        row = conn.execute("SELECT * FROM table_sessions WHERE token = ?", (token,)).fetchone()
+    return table_session_to_dict(row) if row else None
+
+
+def createTableSession(table_number="", guest_name=""):
+    init_database()
+    table_number = str(table_number or "").strip()[:40]
+    guest_name = str(guest_name or "").strip()[:80]
+    token = uuid.uuid4().hex[:12]
+    created_at = datetime.now(timezone.utc).isoformat()
+    with connect_db() as conn:
+        conn.execute(
+            """
+            INSERT INTO table_sessions (token, table_number, guest_name, status, created_at, updated_at)
+            VALUES (?, ?, ?, 'open', ?, ?)
+            """,
+            (token, table_number, guest_name, created_at, created_at),
+        )
+        conn.commit()
+    session["tableSessionToken"] = token
+    return getTableSessionByToken(token)
+
+
+def getOrCreateTableSession(table_number="", guest_name="", token=""):
+    init_database()
+    token = str(token or session.get("tableSessionToken") or "").strip()
+    table_number = str(table_number or "").strip()[:40]
+    guest_name = str(guest_name or "").strip()[:80]
+    if token:
+        existing = getTableSessionByToken(token)
+        if existing and existing["status"] == "open":
+            with connect_db() as conn:
+                conn.execute(
+                    """
+                    UPDATE table_sessions
+                    SET table_number = CASE WHEN ? != '' THEN ? ELSE table_number END,
+                        guest_name = CASE WHEN ? != '' THEN ? ELSE guest_name END,
+                        updated_at = ?
+                    WHERE token = ?
+                    """,
+                    (table_number, table_number, guest_name, guest_name, datetime.now(timezone.utc).isoformat(), token),
+                )
+                conn.commit()
+            session["tableSessionToken"] = token
+            return getTableSessionByToken(token)
+    if not table_number:
+        return None
+    return createTableSession(table_number, guest_name)
+
+
+def closeTableSession(token):
+    init_database()
+    token = str(token or "").strip()
+    if not token:
+        raise ValueError("Table session token is required")
+    updated_at = datetime.now(timezone.utc).isoformat()
+    with connect_db() as conn:
+        cursor = conn.execute(
+            "UPDATE table_sessions SET status = 'closed', updated_at = ? WHERE token = ?",
+            (updated_at, token),
+        )
+        conn.commit()
+    if cursor.rowcount == 0:
+        raise ValueError("Table session not found")
+    if session.get("tableSessionToken") == token:
+        session.pop("tableSessionToken", None)
+    return getTableSessionByToken(token)
+
+
+def createOrderRound(conn, table_session_token, order_id, subtotal_price, total_price):
+    if not table_session_token:
+        return 0
+    row = conn.execute(
+        "SELECT COALESCE(MAX(round_number), 0) AS max_round FROM order_rounds WHERE table_session_token = ?",
+        (table_session_token,),
+    ).fetchone()
+    round_number = int(row_get(row, "max_round", "maxround", default=0) or 0) + 1
+    created_at = datetime.now(timezone.utc).isoformat()
+    insert_sql = """
+        INSERT INTO order_rounds (table_session_token, round_number, order_id, subtotal_price, total_price, status, created_at)
+        VALUES (?, ?, ?, ?, ?, 'sent', ?)
+    """
+    if getattr(conn, "is_postgres", False):
+        insert_sql += " RETURNING id"
+    cursor = conn.execute(insert_sql, (table_session_token, round_number, order_id, subtotal_price, total_price, created_at))
+    return cursor.fetchone()["id"] if getattr(conn, "is_postgres", False) else cursor.lastrowid
+
+
+def getTableSessionBill(token):
+    init_database()
+    token = str(token or "").strip()
+    table_session = getTableSessionByToken(token)
+    if table_session is None:
+        raise ValueError("Table session not found")
+    with connect_db() as conn:
+        rows = conn.execute(
+            "SELECT * FROM orders WHERE table_session_token = ? ORDER BY id ASC",
+            (token,),
+        ).fetchall()
+        orders = []
+        for row in rows:
+            order = row_to_order(row, getOrderItems(conn, row["id"]))
+            order["history"] = getOrderHistory(conn, row["id"])
+            orders.append(order)
+        round_rows = conn.execute(
+            "SELECT * FROM order_rounds WHERE table_session_token = ? ORDER BY round_number ASC",
+            (token,),
+        ).fetchall()
+    active_orders = [order for order in orders if order["status"] != "cancelled"]
+    return {
+        "session": table_session,
+        "orders": orders,
+        "rounds": [
+            {
+                "id": row["id"],
+                "roundNumber": row_get(row, "round_number", default=1),
+                "orderId": row_get(row, "order_id", default=0),
+                "subtotalPrice": row_get(row, "subtotal_price", default=0),
+                "totalPrice": row_get(row, "total_price", default=0),
+                "status": row_get(row, "status", default="sent"),
+                "createdAt": row_get(row, "created_at", default=""),
+            }
+            for row in round_rows
+        ],
+        "totals": {
+            "orders": len(active_orders),
+            "items": sum(order["quantity"] for order in active_orders),
+            "subtotalPrice": round(sum(order["subtotalPrice"] for order in active_orders), 2),
+            "taxPrice": round(sum(order["taxPrice"] for order in active_orders), 2),
+            "serviceFee": round(sum(order["serviceFee"] for order in active_orders), 2),
+            "totalPrice": round(sum(order["totalPrice"] for order in active_orders), 2),
+        },
+    }
+
+
 def normalize_order_items(items=None, meal_name=None, quantity=1, notes=""):
     if items is None:
         items = [{"mealName": meal_name, "quantity": quantity, "notes": notes}]
@@ -964,13 +1184,15 @@ def normalize_order_items(items=None, meal_name=None, quantity=1, notes=""):
     return normalized
 
 
-def addOrder(meal_name=None, quantity=1, table_number="", notes="", items=None, customer_name="", customer_phone=""):
+def addOrder(meal_name=None, quantity=1, table_number="", notes="", items=None, customer_name="", customer_phone="", table_session_token=""):
     init_database()
     normalized_items = normalize_order_items(items, meal_name, quantity, notes)
     table_number = str(table_number or "").strip()[:40]
     order_notes = str(notes or "").strip()[:240]
     customer_name = str(customer_name or "").strip()[:80]
     customer_phone = str(customer_phone or "").strip()[:40]
+    table_session = getOrCreateTableSession(table_number, customer_name, table_session_token)
+    table_session_token = table_session["token"] if table_session else ""
     total_quantity = sum(item["quantity"] for item in normalized_items)
     subtotal_price = round(sum(item["totalPrice"] for item in normalized_items), 2)
     totals = calculate_order_totals(subtotal_price)
@@ -983,16 +1205,19 @@ def addOrder(meal_name=None, quantity=1, table_number="", notes="", items=None, 
         insert_order_sql = """
             INSERT INTO orders (
                 meal_name, quantity, table_number, notes, status,
-                tracking_token, unit_price, subtotal_price, tax_price, service_fee, total_price, customer_name, customer_phone, payment_status, estimated_minutes, status_started_at, created_at, updated_at
-            ) VALUES (?, ?, ?, ?, 'new', ?, ?, ?, ?, ?, ?, ?, ?, 'unpaid', ?, ?, ?, ?)
+                tracking_token, unit_price, subtotal_price, tax_price, service_fee, total_price, customer_name, customer_phone, payment_status, estimated_minutes, status_started_at, table_session_token, created_at, updated_at
+            ) VALUES (?, ?, ?, ?, 'new', ?, ?, ?, ?, ?, ?, ?, ?, 'unpaid', ?, ?, ?, ?, ?)
             """
         if getattr(conn, "is_postgres", False):
             insert_order_sql += " RETURNING id"
         cursor = conn.execute(
             insert_order_sql,
-            (display_name, total_quantity, table_number, order_notes, token, unit_price, totals["subtotalPrice"], totals["taxPrice"], totals["serviceFee"], totals["totalPrice"], customer_name, customer_phone, estimate_prep_minutes("new"), created_at, created_at, created_at),
+            (display_name, total_quantity, table_number, order_notes, token, unit_price, totals["subtotalPrice"], totals["taxPrice"], totals["serviceFee"], totals["totalPrice"], customer_name, customer_phone, estimate_prep_minutes("new"), created_at, table_session_token, created_at, created_at),
         )
         order_id = cursor.fetchone()["id"] if getattr(conn, "is_postgres", False) else cursor.lastrowid
+        round_id = createOrderRound(conn, table_session_token, order_id, totals["subtotalPrice"], totals["totalPrice"])
+        if round_id:
+            conn.execute("UPDATE orders SET round_id = ? WHERE id = ?", (round_id, order_id))
         recordOrderHistory(conn, order_id, "created", "", "new", "customer", "Order placed")
         for item in normalized_items:
             conn.execute(
@@ -1227,6 +1452,8 @@ def getAdminAnalytics():
         total_orders = conn.execute("SELECT COUNT(*) FROM orders").fetchone()[0]
         active_orders = conn.execute("SELECT COUNT(*) FROM orders WHERE status IN ('new', 'preparing')").fetchone()[0]
         total_swipes = conn.execute("SELECT COUNT(*) FROM swipes").fetchone()[0]
+        total_recommendations = conn.execute("SELECT COUNT(*) FROM recommendation_events").fetchone()[0]
+        open_table_sessions = conn.execute("SELECT COUNT(*) FROM table_sessions WHERE status = 'open'").fetchone()[0]
         total_likes = conn.execute("SELECT COUNT(*) FROM swipes WHERE liked = 1").fetchone()[0]
         total_dislikes = conn.execute("SELECT COUNT(*) FROM swipes WHERE liked = 0").fetchone()[0]
         available_meals = conn.execute("SELECT COUNT(*) FROM meals WHERE available = 1").fetchone()[0]
@@ -1284,6 +1511,8 @@ def getAdminAnalytics():
             "orders": total_orders,
             "activeOrders": active_orders,
             "swipes": total_swipes,
+            "recommendations": total_recommendations,
+            "openTableSessions": open_table_sessions,
             "likes": total_likes,
             "dislikes": total_dislikes,
             "availableMeals": available_meals,
@@ -1472,6 +1701,69 @@ def rankedRecommendations(limit=3):
             recommendation["reasons"].append("ML similarity from your swipe pattern")
         recommendations.append(recommendation)
     return recommendations
+
+
+def promptRecommendationExplanation(prompt, meal):
+    prompt_tokens = set(re.findall(r"[a-z0-9]+", str(prompt or "").lower()))
+    reasons = []
+    for value in (meal.get("category"), meal.get("meatKind"), meal.get("taste"), meal.get("emotion")):
+        if value and str(value).lower() in prompt_tokens:
+            reasons.append(f"matches {value}")
+    if meal.get("spicy") and "spicy" in prompt_tokens:
+        reasons.append("spicy preference")
+    if not meal.get("spicy") and ("mild" in prompt_tokens or "not spicy" in str(prompt or "").lower()):
+        reasons.append("mild preference")
+    return reasons or ["closest AI food match from menu text"]
+
+
+def recommendMealsForPrompt(prompt, limit=3):
+    init_database()
+    prompt = str(prompt or "").strip()[:240]
+    meals = getAllMeals(include_unavailable=False)
+    if not prompt:
+        return rankedRecommendations(limit=limit)
+    model = get_recommender_model(meals)
+    prompt_vector = vectorize(prompt, model)
+    scored = []
+    for meal in meals:
+        score = cosine_similarity(prompt_vector, vectorize(meal_document(meal), model))
+        if score <= 0:
+            score = 0
+        scored.append((score, meal))
+    scored.sort(key=lambda item: (item[0], parse_price(item[1].get("price"))), reverse=True)
+    recommendations = []
+    for index, (score, meal) in enumerate(scored[:limit], start=1):
+        item = copy.deepcopy(meal)
+        item["rank"] = index
+        item["matchScore"] = round(score * 10, 4)
+        item["mlScore"] = round(score, 4)
+        item["reasons"] = promptRecommendationExplanation(prompt, meal)
+        recommendations.append(item)
+    return recommendations
+
+
+def recordRecommendationEvent(source, query, recommendations, table_session_token=""):
+    init_database()
+    created_at = datetime.now(timezone.utc).isoformat()
+    analytics_session_id = session.get("analyticsSessionId") or getAnalyticsSessionId()
+    with connect_db() as conn:
+        for item in recommendations:
+            conn.execute(
+                """
+                INSERT INTO recommendation_events (analytics_session_id, table_session_token, source, query, meal_name, score, created_at)
+                VALUES (?, ?, ?, ?, ?, ?, ?)
+                """,
+                (
+                    analytics_session_id,
+                    str(table_session_token or session.get("tableSessionToken") or "").strip(),
+                    str(source or "")[:40],
+                    str(query or "")[:240],
+                    item.get("name", ""),
+                    float(item.get("mlScore", 0) or 0),
+                    created_at,
+                ),
+            )
+        conn.commit()
 
 
 def recommendMeals():

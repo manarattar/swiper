@@ -24,14 +24,20 @@ from backend import (
     getOrderByToken,
     getProductionStatus,
     getRestaurantSettings,
+    getOrCreateTableSession,
     getOrderingPauseMessage,
     getOrders,
     getProgress,
     getSchemaMigrations,
+    getTableSessionBill,
+    getTableSessionByToken,
     goBackOneMeal,
     nextMeal,
+    closeTableSession,
+    recommendMealsForPrompt,
     resetState,
     recordAppEvent,
+    recordRecommendationEvent,
     restaurantAcceptsOrders,
     searchOrders,
     setDietaryFilters,
@@ -245,8 +251,10 @@ def food_swipe():
 
 @app.route("/menu")
 def menu():
-    table = request.args.get("table", "")
-    return render_template("menu.html", meals=getAllMeals(include_unavailable=False), table_number=table)
+    table = request.args.get("table", "").strip()
+    table_session = getOrCreateTableSession(table) if table else getTableSessionByToken(session.get("tableSessionToken"))
+    table_number = table or (table_session or {}).get("tableNumber", "")
+    return render_template("menu.html", meals=getAllMeals(include_unavailable=False), table_number=table_number, table_session=table_session)
 
 
 @app.route("/admin/login", methods=["GET", "POST"])
@@ -401,6 +409,7 @@ def create_order():
             items=data.get("items"),
             customer_name=data.get("customerName", ""),
             customer_phone=data.get("customerPhone", ""),
+            table_session_token=data.get("tableSessionToken", ""),
         )
     except ValueError as exc:
         return jsonify({"error": str(exc)}), 400
@@ -411,6 +420,51 @@ def create_order():
     recordAppEvent("info", "orders", f"New order #{order['id']} received", request.path)
     publish_order_event("order_created", order)
     return jsonify({"order": order}), 201
+
+
+@app.route("/table-sessions", methods=["POST"])
+def create_table_session():
+    data = request.get_json() or {}
+    table_session = getOrCreateTableSession(data.get("tableNumber", ""), data.get("guestName", ""), data.get("tableSessionToken", ""))
+    if table_session is None:
+        return jsonify({"error": "Table number is required"}), 400
+    return jsonify({"tableSession": table_session})
+
+
+@app.route("/table-sessions/current", methods=["GET"])
+def current_table_session():
+    table_session = getTableSessionByToken(session.get("tableSessionToken"))
+    return jsonify({"tableSession": table_session})
+
+
+@app.route("/table-sessions/<token>/bill", methods=["GET"])
+def table_session_bill(token):
+    try:
+        bill = getTableSessionBill(token)
+    except ValueError as exc:
+        return jsonify({"error": str(exc)}), 404
+    return jsonify(bill)
+
+
+@app.route("/table-sessions/<token>/close", methods=["POST"])
+def close_table_session(token):
+    try:
+        table_session = closeTableSession(token)
+    except ValueError as exc:
+        return jsonify({"error": str(exc)}), 404
+    return jsonify({"tableSession": table_session})
+
+
+@app.route("/recommendations/assistant", methods=["POST"])
+def recommendation_assistant():
+    data = request.get_json() or {}
+    prompt = data.get("prompt", "")
+    try:
+        recommendations = recommendMealsForPrompt(prompt, limit=3)
+    except ValueError as exc:
+        return jsonify({"error": str(exc)}), 400
+    recordRecommendationEvent("assistant", prompt, recommendations, data.get("tableSessionToken", ""))
+    return jsonify({"recommendations": recommendations})
 
 
 @app.route("/orders/history", methods=["GET"])

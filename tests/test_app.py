@@ -142,6 +142,9 @@ class SwipeEatTestCase(DatabaseTestCase):
         self.assertIn("checkout-button", html)
         self.assertIn("pairSuggestions", html)
         self.assertIn("{{ meals|tojson }}", template)
+        self.assertIn("AI Menu Match", html)
+        self.assertIn("Table Session", html)
+        self.assertIn("/recommendations/assistant", html)
 
     def test_restart_resets_session(self):
         self.client.post("/handle_swipe", json={"liked": True})
@@ -196,6 +199,38 @@ class SwipeEatTestCase(DatabaseTestCase):
         tracking = self.client.get(order["trackingUrl"]).get_data(as_text=True)
         self.assertIn("Currywurst x2", tracking)
         self.assertIn("Fettuccine Alfredo x1", tracking)
+
+    def test_table_session_tracks_order_rounds_and_bill(self):
+        session_response = self.client.post("/table-sessions", json={"tableNumber": "14", "guestName": "Mina"})
+        self.assertEqual(session_response.status_code, 200)
+        table_session = session_response.get_json()["tableSession"]
+        self.assertEqual(table_session["tableNumber"], "14")
+
+        order_response = self.client.post("/orders", json={
+            "tableNumber": "14",
+            "tableSessionToken": table_session["token"],
+            "items": [{"mealName": "Currywurst", "quantity": 2}],
+        })
+        self.assertEqual(order_response.status_code, 201)
+        order = order_response.get_json()["order"]
+        self.assertEqual(order["tableSessionToken"], table_session["token"])
+        self.assertGreater(order["roundId"], 0)
+
+        bill_response = self.client.get(f"/table-sessions/{table_session['token']}/bill")
+        self.assertEqual(bill_response.status_code, 200)
+        bill = bill_response.get_json()
+        self.assertEqual(bill["totals"]["orders"], 1)
+        self.assertEqual(bill["totals"]["items"], 2)
+        self.assertEqual(bill["rounds"][0]["orderId"], order["id"])
+
+    def test_ai_assistant_returns_menu_recommendations(self):
+        response = self.client.post("/recommendations/assistant", json={"prompt": "spicy vegetarian snack"})
+
+        self.assertEqual(response.status_code, 200)
+        recommendations = response.get_json()["recommendations"]
+        self.assertEqual(len(recommendations), 3)
+        self.assertIn("mlScore", recommendations[0])
+        self.assertIn("reasons", recommendations[0])
     def test_order_endpoint_rejects_invalid_quantity(self):
         response = self.client.post("/orders", json={"mealName": "Currywurst", "quantity": 0})
 
