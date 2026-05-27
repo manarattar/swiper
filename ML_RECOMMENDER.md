@@ -29,6 +29,19 @@ python scripts\train_food_model.py path\to\RAW_recipes.csv --output ml_food_mode
 - Recommendations combine the existing structured preference score with the ML similarity score.
 - Dietary filters, stock, and availability still remain business rules outside the model.
 
+## Optional LLM Assistant
+
+The menu assistant can use OpenAI for richer natural-language explanations.
+
+Set these environment variables in production:
+
+```powershell
+OPENAI_API_KEY=sk-...
+OPENAI_MODEL=gpt-5.4-mini
+```
+
+If `OPENAI_API_KEY` is missing or the request fails, SwipeEat falls back to the local ML recommender.
+
 ## Next Upgrade
 
 Once SwipeEat has enough local swipe/order data, train a ranking model where:
@@ -37,4 +50,3 @@ Once SwipeEat has enough local swipe/order data, train a ranking model where:
 - Add to cart is a stronger positive signal.
 - Completed order is the strongest positive signal.
 - Swipe left is a negative signal.
-

@@ -1,6 +1,7 @@
 import tempfile
 import unittest
 from pathlib import Path
+from unittest import mock
 
 import backend
 from ml_recommender import build_model, meal_document, ml_scores
@@ -227,10 +228,31 @@ class SwipeEatTestCase(DatabaseTestCase):
         response = self.client.post("/recommendations/assistant", json={"prompt": "spicy vegetarian snack"})
 
         self.assertEqual(response.status_code, 200)
-        recommendations = response.get_json()["recommendations"]
+        payload = response.get_json()
+        self.assertEqual(payload["assistantMode"], "local")
+        recommendations = payload["recommendations"]
         self.assertEqual(len(recommendations), 3)
         self.assertIn("mlScore", recommendations[0])
         self.assertIn("reasons", recommendations[0])
+
+    def test_ai_assistant_uses_llm_when_configured(self):
+        fake_payload = {
+            "message": "Samosas are the strongest match for a spicy vegetarian snack.",
+            "recommendations": [
+                {"name": "Samosas", "reason": "Spicy vegetarian snack with savory flavor.", "confidence": 0.94}
+            ],
+        }
+        with mock.patch.dict("os.environ", {"OPENAI_API_KEY": "test-key"}):
+            with mock.patch("backend.callOpenAIResponses", return_value=fake_payload):
+                response = self.client.post("/recommendations/assistant", json={"prompt": "spicy vegetarian snack"})
+
+        self.assertEqual(response.status_code, 200)
+        payload = response.get_json()
+        self.assertEqual(payload["assistantMode"], "llm")
+        self.assertIn("Samosas", [meal["name"] for meal in payload["recommendations"]])
+        samosas = next(meal for meal in payload["recommendations"] if meal["name"] == "Samosas")
+        self.assertEqual(samosas["reasons"], ["Spicy vegetarian snack with savory flavor."])
+        self.assertEqual(samosas["llmConfidence"], 0.94)
     def test_order_endpoint_rejects_invalid_quantity(self):
         response = self.client.post("/orders", json={"mealName": "Currywurst", "quantity": 0})
 

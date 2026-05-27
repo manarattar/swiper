@@ -34,6 +34,7 @@ from backend import (
     goBackOneMeal,
     nextMeal,
     closeTableSession,
+    enrichRecommendationsWithLLM,
     recommendMealsForPrompt,
     resetState,
     recordAppEvent,
@@ -464,7 +465,8 @@ def recommendation_assistant():
     except ValueError as exc:
         return jsonify({"error": str(exc)}), 400
     recordRecommendationEvent("assistant", prompt, recommendations, data.get("tableSessionToken", ""))
-    return jsonify({"recommendations": recommendations})
+    assistant_result = enrichRecommendationsWithLLM(prompt, recommendations)
+    return jsonify(assistant_result)
 
 
 @app.route("/orders/history", methods=["GET"])
