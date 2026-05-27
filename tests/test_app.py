@@ -225,11 +225,14 @@ class SwipeEatTestCase(DatabaseTestCase):
         self.assertEqual(bill["rounds"][0]["orderId"], order["id"])
 
     def test_ai_assistant_returns_menu_recommendations(self):
-        response = self.client.post("/recommendations/assistant", json={"prompt": "spicy vegetarian snack"})
+        with mock.patch.dict("os.environ", {"OPENAI_API_KEY": "", "GROQ_API_KEY": ""}, clear=False):
+            with mock.patch("backend.OPENAI_API_KEY", ""), mock.patch("backend.GROQ_API_KEY", ""):
+                response = self.client.post("/recommendations/assistant", json={"prompt": "spicy vegetarian snack"})
 
         self.assertEqual(response.status_code, 200)
         payload = response.get_json()
         self.assertEqual(payload["assistantMode"], "local")
+        self.assertEqual(payload["llmProvider"], "local")
         recommendations = payload["recommendations"]
         self.assertEqual(len(recommendations), 3)
         self.assertIn("mlScore", recommendations[0])
@@ -249,10 +252,28 @@ class SwipeEatTestCase(DatabaseTestCase):
         self.assertEqual(response.status_code, 200)
         payload = response.get_json()
         self.assertEqual(payload["assistantMode"], "llm")
+        self.assertEqual(payload["llmProvider"], "openai")
         self.assertIn("Samosas", [meal["name"] for meal in payload["recommendations"]])
         samosas = next(meal for meal in payload["recommendations"] if meal["name"] == "Samosas")
         self.assertEqual(samosas["reasons"], ["Spicy vegetarian snack with savory flavor."])
         self.assertEqual(samosas["llmConfidence"], 0.94)
+
+    def test_ai_assistant_supports_groq_when_configured(self):
+        fake_payload = {
+            "message": "Samosas fit best.",
+            "recommendations": [
+                {"name": "Samosas", "reason": "Spicy vegetarian and snackable.", "confidence": 0.91}
+            ],
+        }
+        with mock.patch.dict("os.environ", {"GROQ_API_KEY": "test-key"}, clear=False):
+            with mock.patch.dict("os.environ", {"OPENAI_API_KEY": ""}, clear=False):
+                with mock.patch("backend.callGroqChatCompletions", return_value=fake_payload):
+                    response = self.client.post("/recommendations/assistant", json={"prompt": "spicy vegetarian snack"})
+
+        self.assertEqual(response.status_code, 200)
+        payload = response.get_json()
+        self.assertEqual(payload["assistantMode"], "llm")
+        self.assertEqual(payload["llmProvider"], "groq")
     def test_order_endpoint_rejects_invalid_quantity(self):
         response = self.client.post("/orders", json={"mealName": "Currywurst", "quantity": 0})
 

@@ -28,6 +28,8 @@ DB_PATH = os.environ.get("DATABASE_PATH", "swipeeat.db")
 DATABASE_URL = os.environ.get("DATABASE_URL", "")
 OPENAI_API_KEY = os.environ.get("OPENAI_API_KEY", "")
 OPENAI_MODEL = os.environ.get("OPENAI_MODEL", "gpt-5.4-mini")
+GROQ_API_KEY = os.environ.get("GROQ_API_KEY", "")
+GROQ_MODEL = os.environ.get("GROQ_MODEL", "llama-3.1-8b-instant")
 REQUIRED_MEAL_FIELDS = {
     "name",
     "img",
@@ -1770,8 +1772,16 @@ def recordRecommendationEvent(source, query, recommendations, table_session_toke
         conn.commit()
 
 
-def openaiConfigured():
-    return bool(os.environ.get("OPENAI_API_KEY") or OPENAI_API_KEY)
+def llmProvider():
+    if os.environ.get("OPENAI_API_KEY") or OPENAI_API_KEY:
+        return "openai"
+    if os.environ.get("GROQ_API_KEY") or GROQ_API_KEY:
+        return "groq"
+    return "local"
+
+
+def llmConfigured():
+    return llmProvider() != "local"
 
 
 def parse_llm_json(text):
@@ -1855,18 +1865,90 @@ def callOpenAIResponses(prompt, candidate_meals):
     return parse_llm_json(extract_response_text(payload))
 
 
+def callGroqChatCompletions(prompt, candidate_meals):
+    api_key = os.environ.get("GROQ_API_KEY") or GROQ_API_KEY
+    if not api_key:
+        raise ValueError("GROQ_API_KEY is not configured")
+    model = os.environ.get("GROQ_MODEL") or GROQ_MODEL
+    candidates = [
+        {
+            "name": meal["name"],
+            "description": meal.get("description", ""),
+            "category": meal.get("category", ""),
+            "meatKind": meal.get("meatKind", ""),
+            "taste": meal.get("taste", ""),
+            "spicy": meal.get("spicy", False),
+            "allergens": meal.get("allergens", []),
+            "price": meal.get("price", ""),
+            "localMlScore": meal.get("mlScore", 0),
+        }
+        for meal in candidate_meals
+    ]
+    instructions = (
+        "You are SwipeEat's restaurant menu assistant. Recommend only meals from the provided candidates. "
+        "Respect explicit dietary/allergen requests. Return strict JSON with keys message and recommendations. "
+        "recommendations must be an array of objects with name, reason, confidence from 0 to 1."
+    )
+    user_payload = {
+        "guestRequest": str(prompt or "").strip()[:240],
+        "candidateMeals": candidates,
+    }
+    body = json.dumps({
+        "model": model,
+        "messages": [
+            {"role": "system", "content": instructions},
+            {"role": "user", "content": json.dumps(user_payload)},
+        ],
+        "temperature": 0.2,
+        "max_tokens": 700,
+    }).encode("utf-8")
+    request_obj = urllib.request.Request(
+        "https://api.groq.com/openai/v1/chat/completions",
+        data=body,
+        headers={
+            "Authorization": f"Bearer {api_key}",
+            "Content-Type": "application/json",
+        },
+        method="POST",
+    )
+    try:
+        with urllib.request.urlopen(request_obj, timeout=12) as response:
+            payload = json.loads(response.read().decode("utf-8"))
+    except urllib.error.HTTPError as exc:
+        detail = exc.read().decode("utf-8", errors="replace")
+        raise RuntimeError(f"Groq request failed: {exc.code} {detail[:240]}") from exc
+    except urllib.error.URLError as exc:
+        raise RuntimeError(f"Groq request failed: {exc.reason}") from exc
+    choices = payload.get("choices") or []
+    content = ""
+    if choices:
+        content = ((choices[0].get("message") or {}).get("content") or "")
+    return parse_llm_json(content)
+
+
+def callConfiguredLLM(prompt, candidate_meals):
+    provider = llmProvider()
+    if provider == "openai":
+        return provider, callOpenAIResponses(prompt, candidate_meals)
+    if provider == "groq":
+        return provider, callGroqChatCompletions(prompt, candidate_meals)
+    raise ValueError("No LLM provider is configured")
+
+
 def enrichRecommendationsWithLLM(prompt, local_recommendations):
-    if not openaiConfigured():
+    if not llmConfigured():
         return {
             "assistantMode": "local",
-            "message": "Local ML recommendations are active. Configure OPENAI_API_KEY to enable LLM explanations.",
+            "llmProvider": "local",
+            "message": "Local ML recommendations are active. Configure OPENAI_API_KEY or GROQ_API_KEY to enable LLM explanations.",
             "recommendations": local_recommendations,
         }
     try:
-        llm_payload = callOpenAIResponses(prompt, local_recommendations)
+        provider, llm_payload = callConfiguredLLM(prompt, local_recommendations)
     except (RuntimeError, ValueError, json.JSONDecodeError) as exc:
         return {
             "assistantMode": "local-fallback",
+            "llmProvider": llmProvider(),
             "message": f"LLM assistant unavailable, using local ML: {str(exc)[:160]}",
             "recommendations": local_recommendations,
         }
@@ -1889,6 +1971,7 @@ def enrichRecommendationsWithLLM(prompt, local_recommendations):
     enriched.extend(copy.deepcopy(meal) for meal in local_recommendations if meal["name"] not in seen)
     return {
         "assistantMode": "llm",
+        "llmProvider": provider,
         "message": str(llm_payload.get("message") or "Here are the best matches from the menu.").strip()[:240],
         "recommendations": enriched[:len(local_recommendations)],
     }

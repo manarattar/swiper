@@ -40,7 +40,14 @@ OPENAI_API_KEY=sk-...
 OPENAI_MODEL=gpt-5.4-mini
 ```
 
-If `OPENAI_API_KEY` is missing or the request fails, SwipeEat falls back to the local ML recommender.
+Or use Groq:
+
+```powershell
+GROQ_API_KEY=gsk-...
+GROQ_MODEL=llama-3.1-8b-instant
+```
+
+If no LLM key is configured or the request fails, SwipeEat falls back to the local ML recommender.
 
 ## Next Upgrade
 
