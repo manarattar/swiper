@@ -12,6 +12,8 @@ from datetime import datetime, timezone
 from flask import session
 from werkzeug.security import check_password_hash, generate_password_hash
 
+from ml_recommender import load_model, ml_scores, train_from_meals
+
 try:
     import psycopg
     from psycopg.rows import dict_row
@@ -57,6 +59,7 @@ DEFAULT_RESTAURANT_SETTINGS = {
     "acceptingOrders": "true",
     "busyMessage": "Online ordering is paused right now. Please try again soon.",
 }
+_RECOMMENDER_MODEL = None
 
 
 def normalize_meal(meal):
@@ -1422,6 +1425,13 @@ def compute_score(m):
     return score
 
 
+def get_recommender_model(meals):
+    global _RECOMMENDER_MODEL
+    if _RECOMMENDER_MODEL is None:
+        _RECOMMENDER_MODEL = load_model()
+    return _RECOMMENDER_MODEL or train_from_meals(meals)
+
+
 def getProgress():
     initialize_session()
     total = len(session["meals"])
@@ -1442,13 +1452,24 @@ def rankedRecommendations(limit=3):
     if not acceptable_meals:
         acceptable_meals = meals
 
-    ranked = sorted(acceptable_meals, key=lambda m: compute_score(m), reverse=True)
+    model = get_recommender_model(meals)
+    learned_scores = ml_scores(meals, session.get("swipeHistory", []), model)
+
+    def final_score(meal):
+        rule_score = compute_score(meal)
+        ml_score = learned_scores.get(meal.get("name", ""), 0) * 10
+        return rule_score + ml_score
+
+    ranked = sorted(acceptable_meals, key=final_score, reverse=True)
     recommendations = []
     for index, meal in enumerate(ranked[:limit], start=1):
         recommendation = copy.deepcopy(meal)
         recommendation["rank"] = index
-        recommendation["matchScore"] = compute_score(meal)
+        recommendation["matchScore"] = round(final_score(meal), 4)
+        recommendation["mlScore"] = round(learned_scores.get(meal.get("name", ""), 0), 4)
         recommendation["reasons"] = preferenceExplanation(meal)
+        if recommendation["mlScore"] > 0:
+            recommendation["reasons"].append("ML similarity from your swipe pattern")
         recommendations.append(recommendation)
     return recommendations
 

@@ -1,6 +1,6 @@
 # SwipeEat Project Log
 
-Last updated: 2026-05-03
+Last updated: 2026-05-27
 
 ## Current State
 
@@ -14,6 +14,7 @@ SwipeEat is now a deployed Flask restaurant ordering app with:
 - Kitchen dashboard with live orders, status controls, ETA controls, timers, delayed-order highlighting, and a shortcut back to admin.
 - PostgreSQL support for Render production.
 - Server-sent events for live order/status/payment/ETA updates.
+- Trainable ML food embedding recommender for swipe-based recommendations.
 - Production safety features including admin authentication, CSRF protection, secure headers, rate limits, order pause settings, and production warnings.
 
 Production deployment:
@@ -27,7 +28,15 @@ Current verification:
 
 - `python -m py_compile backend.py server.py tests\test_app.py`
 - `python -m unittest discover -v`
-- Latest passing suite: 37 tests
+- Latest passing suite: 38 tests
+
+ML recommender:
+
+- Added `ml_recommender.py` with a trainable TF-IDF food embedding model.
+- Added `scripts/train_food_model.py` for training from Food.com/recipe CSV data.
+- The app loads `ml_food_model.json` or `FOOD_ML_MODEL_PATH` when available.
+- If no model artifact exists, the app falls back to a model built from the local menu.
+- See `ML_RECOMMENDER.md` for training instructions.
 
 ## Completed Milestones
 
@@ -229,4 +238,3 @@ Start with Priority 1 and Priority 2 together:
 - Add order history/app event CSV exports.
 
 This makes the deployed app easier to operate safely before adding real payments.
-

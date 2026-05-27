@@ -3,6 +3,7 @@ import unittest
 from pathlib import Path
 
 import backend
+from ml_recommender import build_model, meal_document, ml_scores
 from server import app
 
 
@@ -21,6 +22,44 @@ class DatabaseTestCase(unittest.TestCase):
 
 
 class SwipeEatTestCase(DatabaseTestCase):
+    def test_ml_recommender_scores_liked_similar_meals_higher(self):
+        meals = [
+            {
+                "name": "Spicy Lentil Bowl",
+                "description": "Warm spicy lentils with rice",
+                "category": "Indian",
+                "meatKind": "Vegetarian",
+                "taste": "Savory",
+                "emotion": "Comforting",
+                "spicy": True,
+                "allergens": [],
+            },
+            {
+                "name": "Chickpea Curry",
+                "description": "Spicy vegetarian chickpea curry with rice",
+                "category": "Indian",
+                "meatKind": "Vegetarian",
+                "taste": "Savory",
+                "emotion": "Comforting",
+                "spicy": True,
+                "allergens": [],
+            },
+            {
+                "name": "Vanilla Cake",
+                "description": "Sweet vanilla dessert with frosting",
+                "category": "Dessert",
+                "meatKind": "Vegetarian",
+                "taste": "Sweet",
+                "emotion": "Celebratory",
+                "spicy": False,
+                "allergens": ["dairy", "gluten"],
+            },
+        ]
+        model = build_model([meal_document(meal) for meal in meals])
+        scores = ml_scores(meals, [{"mealIndex": 0, "liked": True}], model)
+
+        self.assertGreater(scores["Chickpea Curry"], scores["Vanilla Cake"])
+
     def test_current_meal_starts_at_first_meal_with_progress(self):
         response = self.client.get("/get_current_meal")
 
@@ -80,6 +119,8 @@ class SwipeEatTestCase(DatabaseTestCase):
             self.assertEqual(len(recommendations), 3)
             self.assertEqual([item["rank"] for item in recommendations], [1, 2, 3])
             self.assertIn("reasons", recommendations[0])
+            self.assertIn("mlScore", recommendations[0])
+            self.assertIn("ML similarity from your swipe pattern", recommendations[0]["reasons"])
 
         result_page = self.client.get("/meal-of-the-day").get_data(as_text=True)
         self.assertIn("Your Top Matches", result_page)
