@@ -7,6 +7,46 @@
   <style>
     :root{--peach:#FFE8DA;--taupe:#5F5143;--espresso:#4F3525;--olive:#686928;--orange:#D17F2D;--card:#FFF7F1;--stroke:rgba(95,81,67,.22);--shadow:0 10px 20px rgba(79,53,37,.14);--danger:#dc3545;--success:#27704f;--info:#2f6f89}*{box-sizing:border-box}body{margin:0;font-family:system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif;color:var(--espresso);background:radial-gradient(1200px 800px at 20% -10%,var(--card) 0%,var(--peach) 60%);line-height:1.45;padding-bottom:104px}.header{position:sticky;top:0;z-index:10;backdrop-filter:blur(8px);background:rgba(255,232,218,.94);border-bottom:1px solid var(--stroke)}.header-inner,.container,.cart-inner{width:min(1160px,100%);margin:0 auto;padding:14px 16px}.header-inner{display:flex;align-items:center;justify-content:space-between;gap:12px}.brand{display:flex;align-items:center;gap:12px;font-weight:900}.brand-badge{width:54px;height:54px;border-radius:12px;background:linear-gradient(135deg,var(--orange),var(--olive));display:grid;place-items:center;box-shadow:0 6px 16px rgba(79,53,37,.18)}.title-logo{width:42px;height:42px;object-fit:contain;display:block}.subtle{color:rgba(95,81,67,.85);font-weight:650;font-size:.92rem}.container{margin:18px auto}.table-pill{display:inline-flex;align-items:center;gap:6px;border-radius:999px;padding:7px 10px;background:rgba(104,105,40,.14);color:var(--olive);font-weight:900}.toolbar{display:grid;grid-template-columns:1.1fr repeat(3,minmax(118px,.6fr));gap:10px;padding:12px;margin-bottom:12px;background:rgba(255,247,241,.84);border:1px solid var(--stroke);border-radius:12px;box-shadow:0 6px 14px rgba(79,53,37,.08)}.v2-panel{display:grid;grid-template-columns:.9fr 1.4fr;gap:12px;margin-bottom:14px}.session-strip,.ai-panel{background:rgba(255,247,241,.9);border:1px solid var(--stroke);border-radius:12px;padding:14px;box-shadow:0 6px 14px rgba(79,53,37,.08)}.session-strip h2,.ai-panel h2{font-size:1rem;margin:0 0 6px}.ai-form{display:grid;grid-template-columns:1fr auto;gap:8px}.ai-results{display:grid;gap:8px;margin-top:10px}.ai-rec{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:10px;align-items:center;padding:9px;border-radius:10px;background:rgba(95,81,67,.08)}label{display:grid;gap:5px;font-weight:900;font-size:.86rem}input,textarea,select{width:100%;border:1px solid rgba(95,81,67,.28);border-radius:10px;padding:9px 10px;font:inherit;color:var(--espresso);background:#fff}.check-row,.tabs,.button-row{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px}.check{display:flex;align-items:center;gap:7px;font-weight:850}.check input{width:auto}.tab{border:0;border-radius:999px;padding:8px 11px;background:rgba(95,81,67,.14);color:var(--espresso);font:inherit;font-weight:900;cursor:pointer}.tab.active{background:var(--orange);color:#fff}.grid{display:grid;grid-template-columns:repeat(2,1fr);gap:14px}.card{background:linear-gradient(180deg,var(--card),var(--peach));border:1px solid var(--stroke);border-radius:12px;overflow:hidden;box-shadow:var(--shadow);display:flex;flex-direction:column}.card-media{position:relative;aspect-ratio:16/11;overflow:hidden;background:rgba(104,105,40,.22)}.card-media img{width:100%;height:100%;object-fit:cover;display:block}.chip-row{position:absolute;bottom:10px;left:10px;right:10px;display:flex;gap:8px;flex-wrap:wrap}.chip{padding:4px 9px;border-radius:999px;font-size:12px;color:var(--peach);background:rgba(79,53,37,.58);border:1px solid rgba(255,232,218,.28);backdrop-filter:blur(6px);white-space:nowrap}.card-body{padding:12px 14px 14px;display:grid;gap:8px;flex:1}.title{margin:0;font-size:1.05rem;font-weight:900;display:flex;gap:8px}.desc{color:rgba(95,81,67,.95);font-size:.92rem;margin:0}.actions{margin-top:auto;display:flex;align-items:center;justify-content:space-between;gap:10px}.button,.order-btn,.track-link{border:none;border-radius:10px;padding:10px 12px;font:inherit;font-weight:900;background:var(--orange);color:#fff;cursor:pointer;text-decoration:none}.button.secondary,.track-link{background:var(--olive)}.button.ghost,.order-btn.ghost{background:rgba(95,81,67,.16);color:var(--espresso)}.status{min-height:24px;margin:0 0 12px;font-weight:900;color:var(--olive)}.status.error,.closed-banner{color:var(--danger)}.closed-banner{margin-bottom:12px;padding:12px 14px;border-radius:12px;background:rgba(220,53,69,.12);font-weight:900;border:1px solid rgba(220,53,69,.22)}.payment-note{font-size:.84rem;color:rgba(95,81,67,.86)}.orders-panel{margin-top:18px;background:rgba(255,247,241,.84);border:1px solid var(--stroke);border-radius:12px;padding:14px;box-shadow:0 6px 14px rgba(79,53,37,.08)}.order-history{display:grid;gap:8px}.history-card{display:flex;justify-content:space-between;gap:12px;border-bottom:1px solid rgba(95,81,67,.14);padding-bottom:8px}.badge{display:inline-flex;padding:4px 8px;border-radius:999px;font-size:.78rem;font-weight:900;text-transform:capitalize}.badge-new,.badge-unpaid{background:rgba(209,127,45,.14);color:#9a5516}.badge-preparing,.badge-refunded{background:rgba(47,111,137,.14);color:var(--info)}.badge-completed,.badge-paid{background:rgba(39,112,79,.14);color:var(--success)}.badge-cancelled{background:rgba(220,53,69,.12);color:var(--danger)}.cart-bar{position:fixed;left:0;right:0;bottom:0;z-index:20;background:rgba(255,247,241,.96);border-top:1px solid var(--stroke);box-shadow:0 -8px 22px rgba(79,53,37,.14);backdrop-filter:blur(8px)}.cart-inner{padding:12px 16px;display:flex;justify-content:space-between;align-items:center;gap:12px}.cart-summary{font-weight:900}.cart-items{color:rgba(95,81,67,.9);font-size:.9rem}.modal{border:none;border-radius:12px;padding:0;width:min(680px,calc(100vw - 24px));color:var(--espresso);background:var(--card);box-shadow:0 20px 45px rgba(79,53,37,.28)}.modal::backdrop{background:rgba(79,53,37,.38);backdrop-filter:blur(3px)}.modal-inner{padding:18px;display:grid;gap:12px}.modal-head{display:flex;justify-content:space-between;gap:12px;align-items:start}.modal-img{width:100%;aspect-ratio:16/9;object-fit:cover;border-radius:10px;background:rgba(95,81,67,.12)}.modal-row,.customer-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}.suggestions,.cart-lines,.totals{display:grid;gap:8px}.suggestion,.cart-line,.total-line{display:flex;justify-content:space-between;gap:10px;padding:9px;border-radius:10px;background:rgba(95,81,67,.08)}.cart-line{display:grid;grid-template-columns:minmax(0,1fr) 86px 1.1fr auto;align-items:end}.total-line{background:transparent;border-bottom:1px solid rgba(95,81,67,.14);border-radius:0}.total-line.grand{font-size:1.1rem;font-weight:900;border-bottom:0}.empty-cart{padding:14px;border-radius:10px;background:rgba(95,81,67,.08)}@media(min-width:860px){.grid{grid-template-columns:repeat(3,1fr)}}@media(max-width:760px){body{padding-bottom:132px}.toolbar,.grid,.modal-row,.customer-grid,.cart-line,.v2-panel,.ai-form{grid-template-columns:1fr}.header-inner{align-items:flex-start;flex-direction:column}.cart-inner{align-items:stretch;flex-direction:column}.cart-inner .button{width:100%;min-height:46px}.history-card{flex-direction:column}.order-btn,.button{min-height:44px}}
   </style>
+  <!-- manarattar-geo -->
+  <meta name="description" content="Swipe-driven restaurant ordering: a digital menu, QR-code table ordering, kitchen display mode, and an ML recommender that learns diner preferences.">
+  <link rel="canonical" href="https://swipeat.manarattar.com/">
+  <link rel="alternate" type="text/plain" href="https://swipeat.manarattar.com/llms.txt" title="Summary for language models">
+  <script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@graph": [
+    {
+      "@type": "SoftwareApplication",
+      "name": "SwipeEat",
+      "url": "https://swipeat.manarattar.com/",
+      "description": "Swipe-driven restaurant ordering: a digital menu, QR-code table ordering, kitchen display mode, and an ML recommender that learns diner preferences.",
+      "applicationCategory": "BusinessApplication",
+      "operatingSystem": "Web browser",
+      "offers": {
+        "@type": "Offer",
+        "price": "0",
+        "priceCurrency": "EUR"
+      },
+      "inLanguage": "en",
+      "author": {
+        "@type": "Person",
+        "name": "Manar Attar",
+        "url": "https://manarattar.com/",
+        "sameAs": [
+          "https://github.com/manarattar",
+          "https://linkedin.com/in/manar-attar"
+        ]
+      }
+    },
+    {
+      "@type": "WebSite",
+      "url": "https://swipeat.manarattar.com/",
+      "name": "SwipeEat",
+      "inLanguage": "en"
+    }
+  ]
+}
+  </script>
 </head>
 <body>
   <header class="header" role="banner"><div class="header-inner"><div class="brand"><div class="brand-badge" aria-hidden="true"><img class="title-logo" src="{{ url_for('static', filename='logo_white.png') }}" alt=""></div><div><div>{{ restaurant_settings.restaurantName }} Menu</div><div class="subtle" id="welcome-text">{{ restaurant_settings.tagline }}</div></div></div><div class="button-row"><span id="table-pill" class="table-pill">Table {{ table_number or 'not set' }}</span><a class="track-link" href="{{ url_for('food_swipe') }}">Find My Match</a></div></div></header>
