@@ -235,14 +235,15 @@ def csv_response(filename, body):
     )
 
 
-@app.route("/landingpage")
-def landing():
-    return render_template("landingpage.html", featured_meal=next(iter(getAllMeals(include_unavailable=False)), None))
-
-
 @app.route("/")
-def welcome():
-    return render_template("welcome.html", featured_meal=next(iter(getAllMeals(include_unavailable=False)), None))
+def landing():
+    return render_template("landingpage.html")
+
+
+@app.route("/landingpage")
+def landing_legacy():
+    # The landing page used to live here; keep old links and bookmarks working.
+    return redirect(url_for("landing", **request.args), code=301)
 
 
 @app.route("/food-swipe")
@@ -642,7 +643,7 @@ def admin_orders():
 @app.route("/restart", methods=["POST"])
 def restart():
     resetState()
-    return redirect(url_for("welcome"))
+    return redirect(url_for("landing"))
 
 
 @app.errorhandler(404)

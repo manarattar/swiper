@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-  <title>SwipeEat Landing Page</title>
+  <title>SwipeEat | Swipe to find your next favourite dish</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=DM+Serif+Display&display=swap" rel="stylesheet">
@@ -50,15 +50,33 @@
   </script>
 </head>
 <body class="landing-page">
-  <header class="header"><div class="header-inner"><a href="#hero" aria-label="SwipeEat home"><img class="brand-logo" src="{{ url_for('static',filename='logo.png') }}" alt="SwipeEat logo"></a><nav class="landing-nav" aria-label="Main navigation"><a href="#hero">Home</a><a href="#swipe">Tutorial</a><a href="#about">About</a></nav></div></header>
+  {% set table = request.args.get('table') or None %}
+  <header class="header"><div class="header-inner"><a href="{{ url_for('landing') }}" aria-label="SwipeEat home"><img class="brand-logo" src="{{ url_for('static',filename='logo.png') }}" alt="SwipeEat logo"></a><nav class="landing-nav" aria-label="Main navigation"><a href="#swipe">How it works</a><a href="#about">About</a><a href="#story">Story</a><a class="button nav-cta" href="{{ url_for('menu', table=table) }}">Browse menu</a></nav></div></header>
   <main>
-    <section id="hero" class="landing-hero-original" aria-labelledby="hero-title">
-      <img class="hero-bg" src="/static/meal_images/Landing Welcome.png" alt="A selection of food welcoming diners to SwipeEat">
-      <div class="landing-container hero-content"><img class="hero-logo" src="{{ url_for('static',filename='logo_white.png') }}" alt="SwipeEat logo"><h1 id="hero-title">Great food starts with a good choice.</h1><p>Browse real dishes, choose what you love, and follow your order from the kitchen to your table.</p><div class="hero-actions"><a class="button" href="/">Try Smart Swiping!</a><a class="button secondary" href="/menu">Try Digital Menu!</a></div></div>
+    <section id="hero" class="hero-split" aria-labelledby="hero-title">
+      <div class="landing-container hero-grid">
+        <div class="hero-copy">
+          <p class="eyebrow">AI-powered restaurant ordering</p>
+          <h1 id="hero-title">Great food starts with a good choice.</h1>
+          <p class="hero-lead">Browse real dishes, choose what you love, and follow your order from the kitchen to your table.</p>
+          <div class="hero-actions"><a class="button" href="{{ url_for('food_swipe', table=table) }}">Find my match</a><a class="button secondary" href="{{ url_for('menu', table=table) }}">Browse the menu</a></div>
+          <ul class="hero-points"><li>Order from your table</li><li>Live kitchen updates</li><li>Learns your taste</li></ul>
+        </div>
+        <div class="hero-visual"><img src="/static/meal_images/Landing Welcome.png" alt="A hand lifting the top bun of a freshly made burger"></div>
+      </div>
+    </section>
+    <section class="features" aria-label="What SwipeEat does">
+      <div class="landing-container feature-grid">
+        <article><h3>Swipe to discover</h3><p>Like or skip real dishes from the menu and see what suits you.</p></article>
+        <article><h3>Order from your table</h3><p>Scan the table QR code, build your order and send it to the kitchen.</p></article>
+        <article><h3>Follow it live</h3><p>Track your order from received to ready, with an estimated time.</p></article>
+        <article><h3>Learns your taste</h3><p>Recommendations improve with every swipe and respect your dietary filters.</p></article>
+      </div>
     </section>
   <!-- Block 2: Swipe Images Section -->
-  <section id="swipe" class="section swipe-section">
+  <section id="swipe" class="section swipe-section" aria-labelledby="swipe-title">
     <div class="landing-container">
+      <h2 id="swipe-title">See how swiping works</h2>
       <div class="swipe-image">
         <img src="/static/meal_images/3.png" alt="Tutorial Image 1" loading="lazy">
       </div>
@@ -66,7 +84,7 @@
         <img src="/static/meal_images/4.png" alt="Tutorial Image 2" loading="lazy">
       </div>
       <div class="swipe-image">
-        <img src="/static/meal_images/5.png" alt="Tutorial Image 3" loading="lazy">
+        <img src="/static/meal_images/5.png" alt="Step 1: swipe through dishes, like or skip each one" loading="lazy">
       </div>
     </div>
   </section>
@@ -127,6 +145,14 @@
           <img src="/static/meal_images/food_gallery4.jpeg" alt="Restaurant Visit 5" loading="lazy">
         </div>
       </div>
+    </div>
+  </section>
+
+  <section class="cta-band" aria-labelledby="cta-title">
+    <div class="landing-container">
+      <h2 id="cta-title">Hungry? Let your taste lead.</h2>
+      <p>Find a dish you will love in a few swipes, or go straight to the full menu.</p>
+      <div class="hero-actions"><a class="button" href="{{ url_for('food_swipe', table=table) }}">Find my match</a><a class="button secondary" href="{{ url_for('menu', table=table) }}">Browse the menu</a></div>
     </div>
   </section>
 
