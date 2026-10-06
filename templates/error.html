@@ -1,17 +1,1 @@
-<!doctype html>
-<html lang="en">
-<head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>{{ status_code }} - {{ title }}</title>
-  <style>body{margin:0;min-height:100vh;display:grid;place-items:center;padding:18px;font-family:system-ui;color:#4F3525;background:#FFE8DA}.panel{width:min(560px,100%);background:#FFF7F1;border:1px solid rgba(95,81,67,.22);border-radius:14px;padding:22px;box-shadow:0 10px 20px rgba(79,53,37,.16)}h1{margin:0 0 8px;color:#D17F2D}.code{font-weight:900;color:#686928}.button{display:inline-block;margin-top:14px;border-radius:10px;padding:10px 12px;background:#D17F2D;color:#fff;text-decoration:none;font-weight:900}</style>
-</head>
-<body>
-  <main class="panel">
-    <div class="code">{{ status_code }}</div>
-    <h1>{{ title }}</h1>
-    <p>{{ message }}</p>
-    <a class="button" href="{{ url_for('menu') }}">Open Menu</a>
-  </main>
-</body>
-</html>
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>{{ status_code }} | SwipeEat</title><link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=DM+Serif+Display&display=swap" rel="stylesheet"><link rel="stylesheet" href="{{ url_for('static',filename='styles.css') }}"></head><body><header class="header"><div class="header-inner"><img class="brand-wordmark" src="{{ url_for('static',filename='wordmark.svg') }}" alt="SwipeEat"></div></header><main class="error-page surface"><p class="eyebrow">{{ status_code }}</p><h1>{{ title }}</h1><p>{{ message }}</p><div class="action-row"><a class="button" href="{{ url_for('menu') }}">Browse menu</a><a class="button secondary" href="{{ url_for('welcome') }}">Home</a></div></main></body></html>

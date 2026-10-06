@@ -13,6 +13,11 @@ const progressBar = document.getElementById("progress-bar");
 const likeButton = document.getElementById("like-button");
 const dislikeButton = document.getElementById("dislike-button");
 const goBackButton = document.getElementById("go-back-button");
+const state = document.getElementById("swipe-state");
+const reducedMotion = matchMedia("(prefers-reduced-motion: reduce)");
+try { const items = JSON.parse(localStorage.getItem("swipeeatCart") || "[]"); document.getElementById("swipe-cart").textContent = `Cart (${items.reduce((sum, item) => sum + Number(item.quantity || 0), 0)})`; } catch (error) {}
+function showState(message, retry = false) { state.replaceChildren(document.createTextNode(message)); state.classList.remove("hidden"); card.classList.add("hidden"); if (retry) { const button = document.createElement("button"); button.type = "button"; button.className = "button"; button.textContent = "Retry"; button.onclick = fetchCurrentMeal; state.append(button); } }
+function showCard() { state.classList.add("hidden"); card.classList.remove("hidden"); }
 
 let isSwiping = false;
 let isDragging = false;
@@ -32,32 +37,36 @@ function updateProgress(progress) {
 }
 
 function fetchCurrentMeal() {
+  showState("Loading dishes...");
   fetch("/get_current_meal")
-    .then(response => response.json())
+    .then(response => { if (!response.ok) throw Error("Could not load dishes"); return response.json(); })
     .then(data => {
       const { meal, isMealOfTheDay, progress } = data;
       updateProgress(progress);
-      if (!meal) return;
+      if (!meal) { showState("No dishes available right now. Browse the menu to choose a meal."); return; }
       if (isMealOfTheDay) {
-        window.location.href = "/meal-of-the-day";
+        window.location.href = "/meal-of-the-day" + window.location.search;
         return;
       }
       displayMeal(meal, progress);
     })
-    .catch(err => console.error("Error fetching current meal:", err));
+    .catch(() => showState("Dishes could not be loaded. Please try again.", true));
 }
 
 function displayMeal(meal, progress) {
   updateProgress(progress);
-  mainContainer.classList.remove("hidden");
-  mainContainer.classList.add("invisible");
+  showCard();
+  mealName.textContent = meal.name;
+  mealDescription.textContent = meal.description;
+  mealImg.alt = meal.name;
+  mealEmotion.textContent = "";
 
   const preloadImg = new Image();
   preloadImg.onload = function() {
     mealImg.src = meal.img;
     mealName.textContent = meal.name;
     mealDescription.textContent = meal.description;
-    mealEmotion.textContent = meal.emotion ? `Emotion: ${meal.emotion} ${meal.emoji}` : "";
+    mealEmotion.textContent = "";
     resetCardPosition();
     void mainContainer.offsetWidth;
     mainContainer.classList.remove("invisible");
@@ -66,7 +75,8 @@ function displayMeal(meal, progress) {
   preloadImg.onerror = function() {
     mealName.textContent = meal.name;
     mealDescription.textContent = meal.description;
-    mealEmotion.textContent = meal.emotion ? `Emotion: ${meal.emotion} ${meal.emoji}` : "";
+    mealImg.src = "/static/wordmark.svg";
+    mealEmotion.textContent = "Image unavailable";
     resetCardPosition();
     mainContainer.classList.remove("invisible");
   };
@@ -97,11 +107,11 @@ function handleSwipe(direction) {
         }
         displayMeal(meal, progress);
       })
-      .catch(err => console.error("Error handling swipe:", err))
+      .catch(() => { resetCardPosition(); showState("Could not save that choice. Please retry.", true); })
       .finally(() => {
         isSwiping = false;
       });
-  }, 350);
+  }, reducedMotion.matches ? 0 : 180);
 }
 
 function resetCardPosition() {
@@ -130,7 +140,8 @@ function updateDragState(offsetX) {
   swipeChoice.className = `swipe-choice ${liking ? "choice-like" : "choice-skip"}`;
 }
 
-document.addEventListener("keydown", e => {
+mainContainer.addEventListener("keydown", e => {
+  if (e.target.closest("button,a,input,textarea,select")) return;
   if (e.key === "ArrowRight") {
     handleSwipe("right");
   } else if (e.key === "ArrowLeft") {
@@ -139,7 +150,7 @@ document.addEventListener("keydown", e => {
 });
 
 card.addEventListener("pointerdown", e => {
-  if (isSwiping) return;
+  if (isSwiping || e.target.closest("button,a,input,textarea,select")) return;
   isDragging = true;
   dragStartX = e.clientX;
   card.classList.add("dragging");
@@ -190,5 +201,5 @@ function handleGoBack() {
       }
       displayMeal(meal, progress);
     })
-    .catch(err => console.error("Error going back:", err));
+    .catch(() => showState("Could not undo the last choice. Please retry.", true));
 }

@@ -187,7 +187,7 @@ def add_security_headers(response):
     response.headers.setdefault("X-Frame-Options", "DENY")
     response.headers.setdefault("Referrer-Policy", "strict-origin-when-cross-origin")
     response.headers.setdefault("Permissions-Policy", "camera=(), microphone=(), geolocation=()")
-    response.headers.setdefault("Content-Security-Policy", "default-src 'self'; img-src 'self' data: https:; style-src 'self' 'unsafe-inline' https://cdnjs.cloudflare.com; script-src 'self' 'unsafe-inline'; font-src 'self' https://cdnjs.cloudflare.com; connect-src 'self'; frame-ancestors 'none'")
+    response.headers.setdefault("Content-Security-Policy", "default-src 'self'; img-src 'self' data: https:; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; script-src 'self' 'unsafe-inline'; font-src 'self' https://fonts.gstatic.com; connect-src 'self'; frame-ancestors 'none'")
     if request.is_secure or request.headers.get("X-Forwarded-Proto") == "https":
         response.headers.setdefault("Strict-Transport-Security", "max-age=31536000; includeSubDomains")
     if request.path.startswith(("/admin", "/kitchen")):
@@ -214,7 +214,7 @@ def admin_required(view):
     def wrapped(*args, **kwargs):
         if is_admin_authenticated():
             return view(*args, **kwargs)
-        if request.path.startswith(("/admin/meals", "/admin/analytics", "/admin/orders", "/admin/events", "/admin/inventory", "/admin/qr-codes", "/admin/export", "/admin/system", "/admin/settings", "/kitchen")):
+        if request.path.startswith(("/admin/meals", "/admin/analytics", "/admin/orders", "/admin/events", "/admin/inventory", "/admin/qr-codes", "/admin/export", "/admin/system", "/admin/settings")) or (request.path == "/kitchen" and (request.is_json or request.accept_mimetypes.best == "application/json")):
             return jsonify({"error": "Admin login required"}), 401
         return redirect(url_for("admin_login", next=request.path))
     return wrapped
@@ -222,7 +222,7 @@ def admin_required(view):
 
 def safe_next_url(value):
     value = value or url_for("admin")
-    if value.startswith("/") and not value.startswith("//"):
+    if value.startswith("/") and not value.startswith("//") and "\\" not in value and "\r" not in value and "\n" not in value:
         return value
     return url_for("admin")
 
@@ -237,12 +237,12 @@ def csv_response(filename, body):
 
 @app.route("/landingpage")
 def landing():
-    return render_template("landingpage.html")
+    return render_template("landingpage.html", featured_meal=next(iter(getAllMeals(include_unavailable=False)), None))
 
 
 @app.route("/")
 def welcome():
-    return render_template("welcome.html")
+    return render_template("welcome.html", featured_meal=next(iter(getAllMeals(include_unavailable=False)), None))
 
 
 @app.route("/food-swipe")

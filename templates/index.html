@@ -4,8 +4,9 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Food Swipe</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=DM+Serif+Display&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
-  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css" rel="stylesheet">
+
   <!-- manarattar-geo -->
   <meta name="description" content="Swipe-driven restaurant ordering: a digital menu, QR-code table ordering, kitchen display mode, and an ML recommender that learns diner preferences.">
   <link rel="canonical" href="https://swipeat.manarattar.com/">
@@ -48,7 +49,8 @@
   </script>
 </head>
 <body>
-  <div id="main-container" class="container hidden">
+  <header class="header"><div class="header-inner"><img class="brand-wordmark" src="{{ url_for('static',filename='wordmark.svg') }}" alt="SwipeEat"><nav class="action-row" aria-label="Diner navigation"><a href="{{ url_for('menu',table=request.args.get('table','')) }}">Browse menu</a><a id="swipe-cart" href="{{ url_for('menu',table=request.args.get('table','')) }}">Cart</a></nav></div></header>
+  <main id="main-container" class="swipe-shell"><p class="eyebrow">Find my match</p><h1>Choose what sounds good</h1><p>Like dishes you would enjoy. Skip the rest.</p><div id="swipe-state" class="swipe-state surface" role="status">Loading dishes&hellip;</div>
     <div class="progress-panel" aria-label="Swipe progress">
       <div class="progress-copy">
         <span id="progress-label">Meal 1 of 10</span>
@@ -59,19 +61,19 @@
       </div>
     </div>
 
-    <div id="card" class="card">
+    <div id="card" class="card hidden" tabindex="0" aria-label="Current dish. Use left arrow to skip or right arrow to like.">
       <div id="swipe-choice" class="swipe-choice" aria-hidden="true"></div>
       <header>
          <div class="logo-container">
             <img
               class="title-logo"
-              src="{{ url_for('static', filename='logo.png') }}"
+              src="{{ url_for('static', filename='wordmark.svg') }}"
               alt="SwipeEat logo"
             >
           </div>
       </header>
 
-      <img id="meal-img" src="" alt="Meal Image" draggable="false">
+      <img id="meal-img" src="" alt="" draggable="false">
       <h2 id="meal-name">Meal Name</h2>
       <p id="meal-description">Meal Description</p>
       <p id="meal-emotion" class="meal-emotion"></p>
@@ -79,18 +81,18 @@
       <div class="actions">
         <div class="buttons">
           <button id="dislike-button" class="button dislike" type="button" aria-label="Dislike meal">
-            <i class="fas fa-thumbs-down"></i>
+            Skip
           </button>
           <button id="go-back-button" class="button go-back" type="button" aria-label="Undo last swipe">
-            <i class="fas fa-undo"></i>
+            Undo
           </button>
           <button id="like-button" class="button like" type="button" aria-label="Like meal">
-            <i class="fas fa-thumbs-up"></i>
+            Like
           </button>
         </div>
       </div>
     </div>
-  </div>
+  </main>
   <script src="{{ url_for('static', filename='script.js') }}"></script>
 </body>
 </html>

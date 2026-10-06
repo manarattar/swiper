@@ -1,6 +1,6 @@
 # SwipeEat Project Log
 
-Last updated: 2026-05-27
+Last updated: 2026-10-06
 
 ## Current State
 
@@ -238,3 +238,6 @@ Start with Priority 1 and Priority 2 together:
 - Add order history/app event CSV exports.
 
 This makes the deployed app easier to operate safely before adding real payments.
+# 2026-10-06 — Stage 2 product upgrade
+
+Introduced the shared SwipeEat visual system and local wordmark; rebuilt diner entry, menu, match, order status, receipt, login, and kitchen surfaces. Moved menu controls into sheets, hardened checkout feedback and cart stock checks, corrected kitchen HTML login routing, and added focused regression tests. No database schema or production data was changed.

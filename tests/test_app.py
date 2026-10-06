@@ -22,6 +22,66 @@ class DatabaseTestCase(unittest.TestCase):
         self.tempdir.cleanup()
 
 
+class StageTwoRegressionTestCase(DatabaseTestCase):
+    def test_kitchen_html_redirect_and_json_unauthorized(self):
+        browser = self.client.get('/kitchen')
+        self.assertEqual(browser.status_code, 302)
+        self.assertIn('next=/kitchen', browser.headers['Location'])
+        api = self.client.get('/admin/orders')
+        self.assertEqual(api.status_code, 401)
+        self.assertEqual(api.get_json(), {'error': 'Admin login required'})
+        kitchen_json = self.client.get('/kitchen', headers={'Accept': 'application/json'})
+        self.assertEqual(kitchen_json.status_code, 401)
+
+    def test_login_next_stays_on_site(self):
+        response = self.client.get('/admin/login?next=//evil.example')
+        self.assertIn('value="/admin"', response.get_data(as_text=True))
+        response = self.client.get('/admin/login?next=/kitchen')
+        self.assertIn('value="/kitchen"', response.get_data(as_text=True))
+
+    def test_checkout_error_keeps_cart_and_qr_table(self):
+        page = self.client.get('/menu?table=19').get_data(as_text=True)
+        self.assertIn('id="review-table" value="19"', page)
+        self.assertIn('checkout-error', page)
+        self.assertIn('if(!response.ok){checkoutError.textContent', page)
+        self.assertIn('cart.splice(0,cart.length)', page)
+        response = self.client.post('/orders', json={'mealName': 'Missing dish', 'tableNumber': '19'})
+        self.assertGreaterEqual(response.status_code, 400)
+        self.assertIn('error', response.get_json())
+
+    def test_tracking_cancelled_currency_and_error_page(self):
+        order = self.client.post('/orders', json={'mealName': 'Currywurst'}).get_json()['order']
+        with self.client.session_transaction() as session:
+            session['admin_authenticated'] = True
+        self.client.put(f"/admin/orders/{order['id']}", json={'status': 'cancelled'})
+        page = self.client.get(order['trackingUrl']).get_data(as_text=True)
+        self.assertIn('This order was cancelled', page)
+        self.assertIn('id="cancelled-note" class="status error"', page)
+        self.assertIn('id="total-price"', page)
+        self.assertIn('fonts.gstatic.com', self.client.get('/menu').headers['Content-Security-Policy'])
+        missing = self.client.get('/missing-page')
+        self.assertEqual(missing.status_code, 404)
+        self.assertIn('Browse menu', missing.get_data(as_text=True))
+
+    def test_configured_currency_on_order_pages(self):
+        with self.client.session_transaction() as session:
+            session['admin_authenticated'] = True
+        self.client.put('/admin/settings', json={'currency': '\u20ac'})
+        order = self.client.post('/orders', json={'mealName': 'Currywurst'}).get_json()['order']
+        for route in (f"/order-confirmation/{order['trackingToken']}", order['trackingUrl'],
+                      f"/receipt/{order['trackingToken']}"):
+            page = self.client.get(route)
+            self.assertEqual(page.status_code, 200)
+            self.assertIn('\u20ac', page.get_data(as_text=True))
+
+    def test_server_error_page_has_recovery_action(self):
+        import server
+        with app.test_request_context('/unexpected'):
+            html, status = server.server_error(RuntimeError('test failure'))
+        self.assertEqual(status, 500)
+        self.assertIn('Browse menu', html)
+
+
 class SwipeEatTestCase(DatabaseTestCase):
     def test_ml_recommender_scores_liked_similar_meals_higher(self):
         meals = [
@@ -124,7 +184,7 @@ class SwipeEatTestCase(DatabaseTestCase):
             self.assertIn("ML similarity from your swipe pattern", recommendations[0]["reasons"])
 
         result_page = self.client.get("/meal-of-the-day").get_data(as_text=True)
-        self.assertIn("Your Top Matches", result_page)
+        self.assertIn("Dishes picked for you", result_page)
         self.assertIn("Best match", result_page)
         self.assertIn("data-order-meal", result_page)
         self.assertIn("Order This Match", result_page)
@@ -143,7 +203,7 @@ class SwipeEatTestCase(DatabaseTestCase):
         self.assertIn("checkout-button", html)
         self.assertIn("pairSuggestions", html)
         self.assertIn("{{ meals|tojson }}", template)
-        self.assertIn("AI Menu Match", html)
+        self.assertIn("Help me choose", html)
         self.assertIn("Table Session", html)
         self.assertIn("/recommendations/assistant", html)
 
@@ -198,8 +258,8 @@ class SwipeEatTestCase(DatabaseTestCase):
         self.assertEqual(backend.getMealByName("Currywurst")["stock"], 23)
         self.assertEqual(backend.getMealByName("Fettuccine Alfredo")["stock"], 24)
         tracking = self.client.get(order["trackingUrl"]).get_data(as_text=True)
-        self.assertIn("Currywurst x2", tracking)
-        self.assertIn("Fettuccine Alfredo x1", tracking)
+        self.assertIn("Currywurst &times; 2", tracking)
+        self.assertIn("Fettuccine Alfredo &times; 1", tracking)
 
     def test_table_session_tracks_order_rounds_and_bill(self):
         session_response = self.client.post("/table-sessions", json={"tableNumber": "14", "guestName": "Mina"})
@@ -479,12 +539,14 @@ class NextLevelWorkflowTestCase(DatabaseTestCase):
 
     def test_kitchen_requires_admin_and_lists_active_orders(self):
         self.client.post("/orders", json={"mealName": "Currywurst"})
-        self.assertEqual(self.client.get("/kitchen").status_code, 401)
+        response = self.client.get("/kitchen")
+        self.assertEqual(response.status_code, 302)
+        self.assertIn("/admin/login?next=/kitchen", response.headers["Location"])
         self.login_admin()
         kitchen = self.client.get("/kitchen")
         self.assertEqual(kitchen.status_code, 200)
         self.assertIn("Start Preparing", kitchen.get_data(as_text=True))
-        self.assertIn("badge-paid", kitchen.get_data(as_text=True))
+        self.assertIn("badge(order.paymentStatus)", kitchen.get_data(as_text=True))
         self.assertIn("EventSource(\"/admin/events\")", kitchen.get_data(as_text=True))
         self.assertIn("Update ETA", kitchen.get_data(as_text=True))
         self.assertIn("eta_updated", kitchen.get_data(as_text=True))
@@ -586,20 +648,20 @@ class FinalUpgradeTestCase(DatabaseTestCase):
         confirmation = self.client.get(f"/order-confirmation/{order['trackingToken']}")
         self.assertEqual(confirmation.status_code, 200)
         confirmation_html = confirmation.get_data(as_text=True)
-        self.assertIn("Order Received", confirmation_html)
-        self.assertIn("Mina", confirmation_html)
+        self.assertIn("Order received", confirmation_html)
+        self.assertIn("Table", confirmation_html)
         self.assertIn("$23.40", confirmation_html)
 
         tracking = self.client.get(order["trackingUrl"]).get_data(as_text=True)
         self.assertIn("timeline", tracking)
-        self.assertIn("Mina", tracking)
+        self.assertIn("Payment", tracking)
 
     def test_menu_has_editable_review_checkout(self):
         menu = self.client.get("/menu").get_data(as_text=True)
         self.assertIn("review-modal", menu)
         self.assertIn("data-cart-qty", menu)
         self.assertIn("data-cart-remove", menu)
-        self.assertIn("customer-name", menu)
+        self.assertIn("review-name", menu)
         self.assertIn("place-order-button", menu)
 
     def test_security_headers_are_applied(self):
@@ -710,7 +772,7 @@ class OfficialReadinessTestCase(DatabaseTestCase):
         response = self.client.get(f"/receipt/{order['trackingToken']}")
         self.assertEqual(response.status_code, 200)
         html = response.get_data(as_text=True)
-        self.assertIn("SwipeEat Receipt", html)
+        self.assertIn("Itemised bill", html)
         self.assertIn(f"Order #{order['id']}", html)
 
     def test_admin_system_status_exposes_migrations_without_password_hashes(self):
