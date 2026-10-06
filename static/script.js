@@ -75,7 +75,7 @@ function displayMeal(meal, progress) {
   preloadImg.onerror = function() {
     mealName.textContent = meal.name;
     mealDescription.textContent = meal.description;
-    mealImg.src = "/static/wordmark.svg";
+    mealImg.src = "/static/logo.png";
     mealEmotion.textContent = "Image unavailable";
     resetCardPosition();
     mainContainer.classList.remove("invisible");

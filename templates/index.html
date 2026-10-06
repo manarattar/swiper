@@ -49,7 +49,7 @@
   </script>
 </head>
 <body>
-  <header class="header"><div class="header-inner"><img class="brand-wordmark" src="{{ url_for('static',filename='wordmark.svg') }}" alt="SwipeEat"><nav class="action-row" aria-label="Diner navigation"><a href="{{ url_for('menu',table=request.args.get('table','')) }}">Browse menu</a><a id="swipe-cart" href="{{ url_for('menu',table=request.args.get('table','')) }}">Cart</a></nav></div></header>
+  <header class="header"><div class="header-inner"><img class="brand-logo" src="{{ url_for('static',filename='logo.png') }}" alt="SwipeEat logo"><nav class="action-row" aria-label="Diner navigation"><a href="{{ url_for('menu',table=request.args.get('table','')) }}">Browse menu</a><a id="swipe-cart" href="{{ url_for('menu',table=request.args.get('table','')) }}">Cart</a></nav></div></header>
   <main id="main-container" class="swipe-shell"><p class="eyebrow">Find my match</p><h1>Choose what sounds good</h1><p>Like dishes you would enjoy. Skip the rest.</p><div id="swipe-state" class="swipe-state surface" role="status">Loading dishes&hellip;</div>
     <div class="progress-panel" aria-label="Swipe progress">
       <div class="progress-copy">
@@ -67,7 +67,7 @@
          <div class="logo-container">
             <img
               class="title-logo"
-              src="{{ url_for('static', filename='wordmark.svg') }}"
+              src="{{ url_for('static', filename='logo.png') }}"
               alt="SwipeEat logo"
             >
           </div>
@@ -81,13 +81,13 @@
       <div class="actions">
         <div class="buttons">
           <button id="dislike-button" class="button dislike" type="button" aria-label="Dislike meal">
-            Skip
+            <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M17 14V2M9 18l1-4H4.5a2 2 0 0 1-1.93-2.52l2-7A2 2 0 0 1 6.5 3H17v11l-5.2 6.4a2 2 0 0 1-3.5-1.7L9 18Z"/><path d="M17 3h3a1 1 0 0 1 1 1v9a1 1 0 0 1-1 1h-3"/></svg>
           </button>
           <button id="go-back-button" class="button go-back" type="button" aria-label="Undo last swipe">
-            Undo
+            <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M4 10V4m0 6h6M4.9 10a8 8 0 1 1-.4 5"/></svg>
           </button>
           <button id="like-button" class="button like" type="button" aria-label="Like meal">
-            Like
+            <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M17 10v12M9 6l1 4H4.5a2 2 0 0 0-1.93 2.52l2 7A2 2 0 0 0 6.5 21H17V10l-5.2-6.4a2 2 0 0 0-3.5 1.7L9 6Z"/><path d="M17 10h3a1 1 0 0 1 1 1v9a1 1 0 0 1-1 1h-3"/></svg>
           </button>
         </div>
       </div>

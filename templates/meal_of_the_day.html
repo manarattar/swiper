@@ -9,7 +9,7 @@
 <body>
   <main class="page">
     <header class="match-header">
-      <img class="title-logo" src="{{ url_for('static', filename='wordmark.svg') }}" alt="SwipeEat logo">
+      <img class="title-logo" src="{{ url_for('static', filename='logo.png') }}" alt="SwipeEat logo">
       <p class="eyebrow">Your taste</p><h1>Dishes picked for you</h1>
       <p class="subtitle">Your likes shaped this shortlist. Choose a dish or keep browsing the full menu.</p>
     </header>
@@ -162,7 +162,7 @@
     document.getElementById("match-close").onclick=()=>matchModal.close();
     matchModal.addEventListener("click",event=>{if(event.target===matchModal)matchModal.close();});
     document.getElementById("match-confirm").onclick=()=>{if(!selectedMatchButton)return;if(selectedMatchButton.dataset.orderMeal)orderMeal(selectedMatchButton);else{addMatchToCart(selectedMatchButton);matchModal.close();}};
-    document.querySelectorAll(".hero-card img,.result-card img").forEach(img=>{img.onerror=()=>{img.onerror=null;img.src="/static/wordmark.svg";};});
+    document.querySelectorAll(".hero-card img,.result-card img").forEach(img=>{img.onerror=()=>{img.onerror=null;img.src="/static/logo.png";};});
     updateCartPill();
   </script>
 </body>

@@ -1,1 +1,136 @@
-<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>SwipeEat | Restaurant ordering</title><link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=DM+Serif+Display&display=swap" rel="stylesheet"><link rel="stylesheet" href="{{ url_for('static',filename='styles.css') }}"></head><body><header class="header"><div class="header-inner"><img class="brand-wordmark" src="{{ url_for('static',filename='wordmark.svg') }}" alt="SwipeEat"><nav class="action-row" aria-label="Main navigation"><a href="{{ url_for('menu') }}">Menu</a><a href="{{ url_for('food_swipe') }}">Find a match</a></nav></div></header><main class="shell"><section class="landing-hero"><div><p class="eyebrow">A calmer way to order</p><h1>Great food starts with a good choice.</h1><p>Browse real dishes, choose what you love, and follow your order from the kitchen to your table.</p><div class="action-row"><a class="button" href="{{ url_for('menu') }}">Browse the menu</a><a class="button secondary" href="{{ url_for('food_swipe') }}">Find my match</a></div></div><img src="{{ featured_meal.img if featured_meal else url_for('static',filename='wordmark.svg') }}" alt="{{ featured_meal.name if featured_meal else 'SwipeEat plate' }}"></section><section class="orders-panel"><p class="eyebrow">How it works</p><h2>From choice to table</h2><p>Explore the menu &rarr; add your dishes &rarr; place your order &rarr; follow its progress.</p></section></main></body></html>
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>SwipeEat Landing Page</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=DM+Serif+Display&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="{{ url_for('static',filename='styles.css') }}">
+  <!-- manarattar-geo -->
+  <meta name="description" content="Swipe-driven restaurant ordering: a digital menu, QR-code table ordering, kitchen display mode, and an ML recommender that learns diner preferences.">
+  <link rel="canonical" href="https://swipeat.manarattar.com/">
+  <link rel="alternate" type="text/plain" href="https://swipeat.manarattar.com/llms.txt" title="Summary for language models">
+  <script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@graph": [
+    {
+      "@type": "SoftwareApplication",
+      "name": "SwipeEat",
+      "url": "https://swipeat.manarattar.com/",
+      "description": "Swipe-driven restaurant ordering: a digital menu, QR-code table ordering, kitchen display mode, and an ML recommender that learns diner preferences.",
+      "applicationCategory": "BusinessApplication",
+      "operatingSystem": "Web browser",
+      "offers": {
+        "@type": "Offer",
+        "price": "0",
+        "priceCurrency": "EUR"
+      },
+      "inLanguage": "en",
+      "author": {
+        "@type": "Person",
+        "name": "Manar Attar",
+        "url": "https://manarattar.com/",
+        "sameAs": [
+          "https://github.com/manarattar",
+          "https://linkedin.com/in/manar-attar"
+        ]
+      }
+    },
+    {
+      "@type": "WebSite",
+      "url": "https://swipeat.manarattar.com/",
+      "name": "SwipeEat",
+      "inLanguage": "en"
+    }
+  ]
+}
+  </script>
+</head>
+<body class="landing-page">
+  <header class="header"><div class="header-inner"><a href="#hero" aria-label="SwipeEat home"><img class="brand-logo" src="{{ url_for('static',filename='logo.png') }}" alt="SwipeEat logo"></a><nav class="landing-nav" aria-label="Main navigation"><a href="#hero">Home</a><a href="#swipe">Tutorial</a><a href="#about">About</a></nav></div></header>
+  <main>
+    <section id="hero" class="landing-hero-original" aria-labelledby="hero-title">
+      <img class="hero-bg" src="/static/meal_images/Landing Welcome.png" alt="A selection of food welcoming diners to SwipeEat">
+      <div class="landing-container hero-content"><img class="hero-logo" src="{{ url_for('static',filename='logo_white.png') }}" alt="SwipeEat logo"><h1 id="hero-title">Great food starts with a good choice.</h1><p>Browse real dishes, choose what you love, and follow your order from the kitchen to your table.</p><div class="hero-actions"><a class="button" href="/">Try Smart Swiping!</a><a class="button secondary" href="/menu">Try Digital Menu!</a></div></div>
+    </section>
+  <!-- Block 2: Swipe Images Section -->
+  <section id="swipe" class="section swipe-section">
+    <div class="landing-container">
+      <div class="swipe-image">
+        <img src="/static/meal_images/3.png" alt="Tutorial Image 1" loading="lazy">
+      </div>
+      <div class="swipe-image">
+        <img src="/static/meal_images/4.png" alt="Tutorial Image 2" loading="lazy">
+      </div>
+      <div class="swipe-image">
+        <img src="/static/meal_images/5.png" alt="Tutorial Image 3" loading="lazy">
+      </div>
+    </div>
+  </section>
+
+  <!-- Block 3: About Us Section with Vision, Mission, and Team -->
+  <section id="about" class="section about-section">
+    <div class="landing-container">
+      <h2>About SwipeEat</h2>
+      <div class="vision-mission">
+        <h3>Vision</h3>
+        <p>
+          At SwipeEat, our vision is to redefine the restaurant food experience by seamlessly blending culinary exploration with smart choice technology. We aspire to create an immersive, personalized menu journey that captivates food, transforming meal selection from a routine task into a delightful, intuitive adventure.
+        </p>
+        <h3>Mission</h3>
+        <p>
+          Our mission is to equip restaurants with a smart, interactive platform that revolutionizes how their guests engage with menus. Through a playful swipe interface and intelligent, preference-based recommendations, we make choosing the perfect dish effortless, exciting, and uniquely tailored to individual tastes, enhancing satisfaction and making every restaurant experience memorable.
+        </p>
+      </div>
+      <h3 class="team-headline">The team</h3>
+      <div class="founders">
+        <div class="founder-card">
+          <img src="/static/meal_images/raihan.jpeg" alt="Raihan Karim" loading="lazy">
+          <h3>Raihan Karim</h3>
+          <h6>AI Engineer, food-tech visionary</h6>
+        </div>
+        <div class="founder-card">
+          <img src="/static/meal_images/manar.jpeg" alt="Manar Attar" loading="lazy">
+          <h3>Manar Attar</h3>
+          <h6>AI Researcher, Data Scientist</h6>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Block 4: Story Section with Food Gallery -->
+  <section id="story" class="section story-section">
+    <div class="landing-container">
+      <h2>The Story Behind SwipeEat</h2>
+      <div class="story-description">
+        <p>
+          As explorers of taste and pioneers of technology, we constantly chase extraordinary food experiences. One evening, amid endless menu scrolling, inspiration struck... What if choosing a meal was as intuitive as a heartbeat? From that moment, our innovative, SwipeEat platform was born, effortlessly guiding you to dishes you'll adore.
+        </p>
+      </div>
+      <div class="food-gallery">
+        <div class="gallery-item">
+          <img src="/static/meal_images/food_gallery5.jpeg" alt="Restaurant Visit 1" loading="lazy">
+        </div>
+        <div class="gallery-item">
+          <img src="/static/meal_images/food_gallery6.jpeg" alt="Restaurant Visit 2" loading="lazy">
+        </div>
+        <div class="gallery-item big">
+          <img src="/static/meal_images/food_gallery2.jpeg" alt="Restaurant Visit 3" loading="lazy">
+        </div>
+        <div class="gallery-item">
+          <img src="/static/meal_images/food_gallery7.jpeg" alt="Restaurant Visit 4" loading="lazy">
+        </div>
+        <div class="gallery-item">
+          <img src="/static/meal_images/food_gallery4.jpeg" alt="Restaurant Visit 5" loading="lazy">
+        </div>
+      </div>
+    </div>
+  </section>
+
+  </main>
+  <footer class="landing-footer"><div class="landing-container"><img class="brand-logo" src="{{ url_for('static',filename='logo.png') }}" alt="SwipeEat logo"><span>&copy; SwipeEat</span><a href="#hero">Back to top &uarr;</a></div></footer>
+</body>
+</html>

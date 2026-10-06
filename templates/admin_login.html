@@ -7,7 +7,7 @@
 
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=DM+Serif+Display&display=swap" rel="stylesheet"><link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}"></head>
 <body>
-  <main class="login-shell"><section class="login-panel surface"><img class="brand-wordmark" src="{{ url_for('static',filename='wordmark.svg') }}" alt="SwipeEat"><p class="eyebrow">Staff access</p><h1>Welcome back</h1>
+  <main class="login-shell"><section class="login-panel surface"><img class="brand-logo" src="{{ url_for('static',filename='logo.png') }}" alt="SwipeEat logo"><p class="eyebrow">Staff access</p><h1>Welcome back</h1>
     <p>Sign in to continue to {{ 'kitchen' if next_url.startswith('/kitchen') else 'admin' }}.</p>
     {% if error %}<p class="status error" role="alert">{{ error }}</p>{% endif %}
     <form method="POST" action="{{ url_for('admin_login') }}">
